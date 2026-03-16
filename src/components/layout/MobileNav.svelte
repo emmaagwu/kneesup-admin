@@ -32,7 +32,7 @@
       "
     >
       <span class="w-5 h-5 flex items-center justify-center">
-        {@html item.icon}
+        <svelte:component this={item.icon} class="w-4 h-4"/>
       </span>
       <span
         class="text-[10px] font-medium leading-none truncate max-w-[52px] text-center
