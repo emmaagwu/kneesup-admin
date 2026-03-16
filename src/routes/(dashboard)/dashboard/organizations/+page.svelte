@@ -15,16 +15,46 @@
   }
 
   const organizations: Organization[] = [
-    { id: '1', name: 'Veilar Co.', owner: 'Jerome Bell', email: 'felicia.reid@example.com', revenue: 1100, venues: 11, status: 'active' },
-    { id: '2', name: 'Socrates LLC.', owner: 'Jane Cooper', email: 'weaver@example.com', revenue: 1200, venues: 5, status: 'active' },
-    { id: '3', name: 'Greenbergs Inc.', owner: 'Esther Howard', email: 'rivera@example.com', revenue: 500, venues: 8, status: 'active' },
-    { id: '4', name: 'eHamblix Ltd.', owner: 'Eleanor Pena', email: 'jennings@example.com', revenue: 1900, venues: 16, status: 'active' },
-    { id: '5', name: 'Elvilloe', owner: 'Guy Hawkins', email: 'sanders@example.com', revenue: 1400, venues: 13, status: 'inactive' },
-    { id: '6', name: 'Alizates Co.', owner: 'Courtney Henry', email: 'tanya.hill@example.com', revenue: 900, venues: 19, status: 'active' },
-    { id: '7', name: 'Curcee Ltd.', owner: 'Ronald Richards', email: 'simmons@example.com', revenue: 600, venues: 2, status: 'inactive' },
-    { id: '8', name: 'Itionom Inc.', owner: 'Devon Lane', email: 'baker@example.com', revenue: 100, venues: 1, status: 'active' },
-    { id: '9', name: 'Habidence Inc.', owner: 'Theresa Webb', email: 'lawson@example.com', revenue: 1600, venues: 20, status: 'blocked' },
-    { id: '10', name: 'Marklon Group', owner: 'Albert Fox', email: 'albert.fox@example.com', revenue: 2100, venues: 9, status: 'active' },
+    {
+      id: '1', name: 'Veilar Co.', owner: 'Jerome Bell', email: 'felicia.reid@example.com',
+      revenue: 1100, venues: 11, status: 'active'
+    },
+    {
+      id: '2', name: 'Socrates LLC.', owner: 'Jane Cooper', email: 'weaver@example.com',
+      revenue: 1200, venues: 5, status: 'active'
+    },
+    {
+      id: '3', name: 'Greenbergs Inc.', owner: 'Esther Howard', email: 'rivera@example.com',
+      revenue: 500, venues: 8, status: 'active'
+    },
+    {
+      id: '4', name: 'eHamblix Ltd.', owner: 'Eleanor Pena', email: 'jennings@example.com',
+      revenue: 1900, venues: 16, status: 'active'
+    },
+    {
+      id: '5', name: 'Elvilloe', owner: 'Guy Hawkins', email: 'sanders@example.com',
+      revenue: 1400, venues: 13, status: 'inactive'
+    },
+    {
+      id: '6', name: 'Alizates Co.', owner: 'Courtney Henry', email: 'tanya.hill@example.com',
+      revenue: 900, venues: 19, status: 'active'
+    },
+    {
+      id: '7', name: 'Curcee Ltd.', owner: 'Ronald Richards', email: 'simmons@example.com',
+      revenue: 600, venues: 2, status: 'inactive'
+    },
+    {
+      id: '8', name: 'Itionom Inc.', owner: 'Devon Lane', email: 'baker@example.com',
+      revenue: 100, venues: 1, status: 'active'
+    },
+    {
+      id: '9', name: 'Habidence Inc.', owner: 'Theresa Webb', email: 'lawson@example.com',
+      revenue: 1600, venues: 20, status: 'blocked'
+    },
+    {
+      id: '10', name: 'Creative Hub', owner: 'John Doe', email: 'johndoe@example.com',
+      revenue: 20480, venues: 10, status: 'active'
+    },
   ];
 
   // Summary stats
@@ -74,7 +104,8 @@
   }
 
   function handleAction(action: string, org: Organization) {
-    console.log(action, org);
+    if (action === 'view') goto(`/dashboard/organizations/${org.id}`);
+    if (action === 'edit') goto(`/dashboard/organizations/${org.id}/edit`);
     closeMenu();
   }
 </script>
@@ -192,7 +223,12 @@
         <tbody class="divide-y divide-[#f9fafb]">
           {#each paginated as org}
             <tr class="hover:bg-[#fafafa] transition-colors group">
-              <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{org.name}</td>
+              <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">
+                <a href="/dashboard/organizations/{org.id}"
+                  class="text-sm font-semibold text-[#111827] hover:text-[#0d9488] transition-colors">
+                  {org.name}
+                </a>
+              </td>
               <td class="px-4 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{org.owner}</td>
               <td class="px-4 py-4 text-sm text-[#6b7280]">{org.email}</td>
               <td class="px-4 py-4 text-sm text-[#111827]">{formatCurrency(org.revenue)}</td>
