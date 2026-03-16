@@ -302,7 +302,10 @@
         <div class="px-4 py-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-[#111827]">{org.name}</p>
+              <a href="/dashboard/organizations/{org.id}"
+                class="text-sm font-semibold text-[#111827] hover:text-[#0d9488] transition-colors">
+                {org.name}
+              </a>
               <p class="text-xs text-[#6b7280] mt-0.5">{org.owner}</p>
               <p class="text-xs text-[#9ca3af] mt-0.5 truncate">{org.email}</p>
               <div class="flex items-center gap-3 mt-2">
