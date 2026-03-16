@@ -116,3 +116,5 @@
     </div>
   </div>
 </div>
+
+// change the audit log page to use the admin team layout

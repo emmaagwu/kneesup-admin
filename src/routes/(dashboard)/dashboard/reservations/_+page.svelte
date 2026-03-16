@@ -144,3 +144,5 @@
     </div>
   </div>
 </div>
+
+// change the reservations page to use the admin team layout

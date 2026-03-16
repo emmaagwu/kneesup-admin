@@ -155,3 +155,5 @@
     {/if}
   </div>
 </div>
+
+// change the organizations page to use the admin team layout

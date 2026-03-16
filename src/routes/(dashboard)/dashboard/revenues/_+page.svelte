@@ -94,3 +94,6 @@
     </div>
   </div>
 </div>
+
+
+// change the revenues page to use the admin team layout

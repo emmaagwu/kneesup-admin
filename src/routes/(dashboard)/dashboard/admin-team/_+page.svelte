@@ -68,3 +68,5 @@
     {/each}
   </div>
 </div>
+
+// change the admin team page to use the admin team layout

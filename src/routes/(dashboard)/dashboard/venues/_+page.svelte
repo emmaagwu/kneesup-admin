@@ -150,3 +150,5 @@
     </div>
   </div>
 </div>
+
+// change the venues page to use the admin team layout
