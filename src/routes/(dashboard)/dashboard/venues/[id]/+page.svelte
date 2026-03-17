@@ -623,22 +623,22 @@
           </p>
         </div>
 
-        <!-- Pricing model selector -->
+        <!-- Pricing model tabs -->
         <div class="mb-4">
           <p class="text-xs font-semibold text-[#374151] mb-2">Select your pricing model</p>
-          <div class="grid grid-cols-4 gap-1 bg-[#f3f4f6] rounded-lg p-1">
+          <div class="grid grid-cols-4 gap-0 border border-[#e5e7eb] rounded-lg overflow-hidden">
             {#each ([
-              { key: 'hour', label: 'Payment per Hour' },
-              { key: 'guest', label: 'Payment per Guest' },
-              { key: 'flat', label: 'Flat Rental Fee' },
+              { key: 'hour',    label: 'Payment per Hour' },
+              { key: 'guest',   label: 'Payment per Guest' },
+              { key: 'flat',    label: 'Flat Rental Fee' },
               { key: 'contact', label: 'Contact for Pricing' }
             ] as const) as model}
               <button
                 onclick={() => pricingModel = model.key}
-                class="px-2 py-1.5 rounded-md text-[10px] font-medium text-center transition-colors
+                class="px-2 py-2.5 text-[10px] font-medium text-center transition-colors border-r border-[#e5e7eb] last:border-r-0
                        {pricingModel === model.key
-                         ? 'bg-white text-[#111827] shadow-sm'
-                         : 'text-[#6b7280] hover:text-[#374151]'}"
+                         ? 'bg-[#1a2e3b] text-white'
+                         : 'bg-white text-[#6b7280] hover:bg-[#f9fafb] hover:text-[#374151]'}"
               >
                 {model.label}
               </button>
@@ -646,7 +646,7 @@
           </div>
         </div>
 
-        <!-- Payment per Hour fields -->
+        <!-- ── Payment per Hour ── -->
         {#if pricingModel === 'hour'}
           <div class="border border-[#e5e7eb] rounded-xl overflow-hidden mb-4">
             <div class="bg-[#fafafa] px-4 py-3 border-b border-[#f0f0f0]">
@@ -665,7 +665,7 @@
                     </svg>
                   </span>
                   <input type="text" bind:value={hourlyRate} placeholder="Enter hourly rate"
-                    class="w-full pl-8 pr-4 py-2 text-sm rounded-lg border border-[#e5e7eb]
+                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
                            focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
                 </div>
               </div>
@@ -682,14 +682,129 @@
                   Minimum Booking Hours <span class="text-red-500">*</span>
                 </label>
                 <input type="text" bind:value={minBookingHours} placeholder="Enter minimum hour a guest can book at your space"
-                  class="w-full px-4 py-2 text-sm rounded-lg border border-[#e5e7eb]
+                  class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
+                         focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+              </div>
+            </div>
+          </div>
+
+        <!-- ── Payment per Guest ── -->
+        {:else if pricingModel === 'guest'}
+          <div class="border border-[#e5e7eb] rounded-xl overflow-hidden mb-4">
+            <div class="bg-[#fafafa] px-4 py-3 border-b border-[#f0f0f0]">
+              <p class="text-xs font-semibold text-[#374151]">Payment per Guest</p>
+              <p class="text-xs text-[#9ca3af] mt-0.5">Set your pricing and requirements</p>
+            </div>
+            <div class="p-4 space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                  Price per Guest <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </span>
+                  <input type="text" placeholder="Enter rate"
+                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
+                           focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                  What's included? <span class="text-red-500">*</span>
+                </label>
+                <textarea placeholder="Describe what guest would have access to..." rows="4"
+                  class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+                         focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                    Minimum Guest <span class="text-red-500">*</span>
+                  </label>
+                  <input type="number" placeholder="Enter minimum no. of guest"
+                    class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
+                           focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                    Maximum Guest <span class="text-red-500">*</span>
+                  </label>
+                  <input type="number" placeholder="Enter maximum no. of guest"
+                    class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
+                           focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <!-- ── Flat Rental Fee ── -->
+        {:else if pricingModel === 'flat'}
+          <div class="border border-[#e5e7eb] rounded-xl overflow-hidden mb-4">
+            <div class="bg-[#fafafa] px-4 py-3 border-b border-[#f0f0f0]">
+              <p class="text-xs font-semibold text-[#374151]">Flat Fixed Rental Payment</p>
+              <p class="text-xs text-[#9ca3af] mt-0.5">Set your pricing and requirements</p>
+            </div>
+            <div class="p-4 space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                  Venue Fee <span class="text-red-500">*</span>
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </span>
+                  <input type="text" placeholder="Enter fee"
+                    class="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb]
+                           focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                  What's included? <span class="text-red-500">*</span>
+                </label>
+                <textarea placeholder="Describe what guest would have access to..." rows="4"
+                  class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+                         focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+              </div>
+            </div>
+          </div>
+
+        <!-- ── Contact for Pricing ── -->
+        {:else if pricingModel === 'contact'}
+          <div class="border border-[#e5e7eb] rounded-xl overflow-hidden mb-4">
+            <div class="bg-[#fafafa] px-4 py-3 border-b border-[#f0f0f0]">
+              <p class="text-xs font-semibold text-[#374151]">Contact for Pricing</p>
+              <p class="text-xs text-[#9ca3af] mt-0.5">Guests will contact you to discuss pricing</p>
+            </div>
+            <div class="p-4 space-y-4">
+              <!-- How this works -->
+              <div class="bg-[#fffbeb] border border-[#fde68a] rounded-lg p-3.5">
+                <p class="text-xs font-semibold text-[#92400e] mb-1.5">How This Works</p>
+                <p class="text-xs text-[#78350f] leading-relaxed">
+                  Your venue will be listed without public pricing. Interested guests will contact you
+                  directly through the platform to discuss their needs and receive a custom quote.
+                  <span class="font-semibold">No deposit or payment is collected through KneesUp</span> –
+                  all pricing and payment arrangements are handled directly between you and the guest.
+                </p>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                  Message for Guests <span class="text-red-500">*</span>
+                </label>
+                <textarea placeholder="Explain why guests should contact your for pricing..." rows="4"
+                  class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
               </div>
             </div>
           </div>
         {/if}
 
-        <!-- Additional Fees -->
+        <!-- Additional Fees & Charges (shown for all pricing models) -->
         <div class="border border-[#e5e7eb] rounded-xl overflow-hidden">
           <div class="flex items-center justify-between bg-[#fafafa] px-4 py-3 border-b border-[#f0f0f0]">
             <div>
@@ -706,13 +821,12 @@
             </button>
           </div>
           <div class="p-4 space-y-3">
-            <!-- Header row -->
             <div class="grid grid-cols-3 gap-2">
               <p class="text-xs font-semibold text-[#6b7280]">Name</p>
               <p class="text-xs font-semibold text-[#6b7280]">Type</p>
               <p class="text-xs font-semibold text-[#6b7280]">Amount</p>
             </div>
-            {#each additionalFees as fee, i}
+            {#each additionalFees as fee, _i}
               <div class="grid grid-cols-3 gap-2">
                 <input type="text" bind:value={fee.name} placeholder="Enter fee name"
                   class="px-3 py-2 text-xs rounded-lg border border-[#e5e7eb]
@@ -725,7 +839,8 @@
                     <option>Percentage</option>
                     <option>Fixed or Percentage</option>
                   </select>
-                  <svg class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#9ca3af] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <svg class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#9ca3af] pointer-events-none"
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                   </svg>
                 </div>
