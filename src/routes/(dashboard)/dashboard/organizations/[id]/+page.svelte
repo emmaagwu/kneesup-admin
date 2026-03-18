@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import TopBar from '$components/layout/TopBar.svelte';
+  import type { PageData } from './$types';
+
+  let { data }: { data: PageData } = $props();
 
   // ── Types ────────────────────────────────────────────────────────
   type OrgStatus = 'active' | 'inactive' | 'blocked';
@@ -30,51 +32,34 @@
     venues: OrgVenue[]; reservations: OrgReservation[]; team: OrgMember[]; activity: OrgActivity[];
   }
 
-  // ── Shared sub-data (reused across all orgs) ─────────────────────
-  const sharedVenues: OrgVenue[] = [
-    { id: 'v1', name: 'The BeatRoot',    address: '2118 Thornridge Cir. Syracuse, Connecticut 35624', spaces: 4, rating: 4.2, status: 'active' },
-    { id: 'v2', name: 'Rhythm Lounge',   address: '2464 Royal Ln. Mesa, New Jersey 45463',            spaces: 5, rating: 1.5, status: 'active' },
-    { id: 'v3', name: 'The Song Gallery',address: '2715 Ash Dr. San Jose, South Dakota 83475',        spaces: 4, rating: 2.3, status: 'inactive' },
-    { id: 'v4', name: 'Vibe Hotel',      address: '3517 W. Gray St. Utica, Pennsylvania 57867',       spaces: 3, rating: 4.0, status: 'active' },
-    { id: 'v5', name: "Euterpe's Hall",  address: '2972 Westheimer Rd. Santa Ana, Illinois 85386',    spaces: 1, rating: 1.9, status: 'inactive' },
-    { id: 'v6', name: "Quaver's",        address: '6391 Elgin St. Celina, Delaware 10299',            spaces: 2, rating: 3.5, status: 'active' },
-  ];
-
-  const sharedReservations: OrgReservation[] = [
-    { id: 'r1', client: 'Darrell Steward',    email: 'felicia.reid@example.com', venue: 'The Ear Worm',    space: 'American Corner',   cost: '$27.91',  dateTime: '15 May 2020 8:00 pm',  duration: '2 hrs', status: 'active' },
-    { id: 'r2', client: 'Robert Fox',         email: 'weaver@example.com',       venue: 'The BeatRoot',    space: 'Cisco Conclave',    cost: '$45.67',  dateTime: '15 May 2020 8:00 pm',  duration: '3 hrs', status: 'active' },
-    { id: 'r3', client: 'Floyd Miles',        email: 'rivera@example.com',       venue: "Quaver's",        space: 'Conference Hall',   cost: '$116.34', dateTime: '15 May 2020 8:00 pm',  duration: '4 hrs', status: 'active' },
-    { id: 'r4', client: 'Eleanor Pena',       email: 'jennings@example.com',     venue: "Euterpe's Hall",  space: 'Digital Domain',    cost: '$22.67',  dateTime: '15 May 2020 10:00 pm', duration: '5 hrs', status: 'active' },
-    { id: 'r5', client: 'Cameron Williamson', email: 'baker@example.com',        venue: 'The Song Gallery', space: 'Jasper Junction',  cost: '$81.45',  dateTime: '15 May 2020 11:00 pm', duration: '1 hr',  status: 'inactive' },
-    { id: 'r6', client: 'Savannah Nguyen',    email: 'lawson@example.com',       venue: 'Vibe Hotel',      space: 'Ripple Reef',       cost: '$78.93',  dateTime: '15 May 2020 5:00 pm',  duration: '2 hrs', status: 'active' },
-  ];
-
-  const sharedTeam: OrgMember[] = [
-    { id: 'm1', name: 'Darrell Steward', email: 'felicia.reid@example.com', role: 'Owner', dateJoined: '2020-05-01 06:05:46', status: 'active' },
-    { id: 'm2', name: 'Robert Fox',      email: 'weaver@example.com',       role: 'Admin', dateJoined: '2020-05-06 11:24:08', status: 'active' },
-    { id: 'm3', name: 'Floyd Miles',     email: 'rivera@example.com',       role: 'Admin', dateJoined: '2020-05-03 08:14:01', status: 'inactive' },
-  ];
-
-  // ── All orgs db ───────────────────────────────────────────────────
-  const orgDb: Record<string, OrgDetail> = {
-    '1':  { id: '1',  name: 'Veilar Co.',      ownerName: 'Jerome Bell',    ownerEmail: 'felicia.reid@example.com', ownerTitle: 'Owner & Manager', venueCount: 11, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '2':  { id: '2',  name: 'Socrates LLC.',   ownerName: 'Jane Cooper',    ownerEmail: 'weaver@example.com',       ownerTitle: 'Owner & Manager', venueCount: 5,  reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '3':  { id: '3',  name: 'Greenbergs Inc.', ownerName: 'Esther Howard',  ownerEmail: 'rivera@example.com',       ownerTitle: 'Owner & Manager', venueCount: 8,  reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '4':  { id: '4',  name: 'eHamblix Ltd.',   ownerName: 'Eleanor Pena',   ownerEmail: 'jennings@example.com',     ownerTitle: 'Owner & Manager', venueCount: 16, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '5':  { id: '5',  name: 'Elvilloe',        ownerName: 'Guy Hawkins',    ownerEmail: 'sanders@example.com',      ownerTitle: 'Owner & Manager', venueCount: 13, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'inactive', venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '6':  { id: '6',  name: 'Alizates Co.',    ownerName: 'Courtney Henry', ownerEmail: 'tanya.hill@example.com',   ownerTitle: 'Owner & Manager', venueCount: 19, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '7':  { id: '7',  name: 'Curcee Ltd.',     ownerName: 'Ronald Richards',ownerEmail: 'simmons@example.com',      ownerTitle: 'Owner & Manager', venueCount: 2,  reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'inactive', venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '8':  { id: '8',  name: 'Itionom Inc.',    ownerName: 'Devon Lane',     ownerEmail: 'baker@example.com',        ownerTitle: 'Owner & Manager', venueCount: 1,  reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '9':  { id: '9',  name: 'Habidence Inc.',  ownerName: 'Theresa Webb',   ownerEmail: 'lawson@example.com',       ownerTitle: 'Owner & Manager', venueCount: 20, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'blocked',  venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-    '10': { id: '10', name: 'Creative Hub',    ownerName: 'John Doe',       ownerEmail: 'johndoe@example.com',      ownerTitle: 'Owner & Manager', venueCount: 10, reservationCount: 85, revenue: '$20,480', teamCount: 4, status: 'active',   venues: sharedVenues, reservations: sharedReservations, team: sharedTeam, activity: sharedTeam },
-  };
-
   // ── State ─────────────────────────────────────────────────────────
-  let id = $derived($page.params.id);
-  let org = $derived(orgDb[id] ?? orgDb['10']);
   let activeTab = $state<Tab>('venues');
   let showBlockModal = $state(false);
   let activeMenu = $state<string | null>(null);
+
+  // Build the org object in the exact shape your markup expects
+  let org = $derived<OrgDetail>({
+    id: data.organization.id,
+    name: data.organization.name,
+
+    ownerName: data.owner?.name ?? '—',
+    ownerEmail: data.owner?.email ?? data.organization.email ?? '—',
+    ownerTitle: data.owner?.role ?? '—', // "Owner" from orgMembers[].userRole
+
+    venueCount: data.venues.length,
+    reservationCount: data.reservationCount,
+    revenue: data.revenue,
+    teamCount: data.team.length,
+
+    status: (data.organization.status as OrgStatus) ?? 'active',
+
+    venues: data.venues as OrgVenue[],
+    reservations: data.reservations as unknown as OrgReservation[],
+
+    // team now includes name + dateJoined from server hydration
+    team: data.team as OrgMember[],
+    activity: data.activity as OrgActivity[]
+  });
 
   // ── Helpers ───────────────────────────────────────────────────────
   function getInitials(name: string) {
@@ -109,6 +94,13 @@
     { key: 'team',         label: 'Team members' },
     { key: 'activity',     label: 'Activity' },
   ];
+
+  function formatDate(iso: string) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit' });
+  }
 </script>
 
 <svelte:head>
@@ -425,7 +417,7 @@
                 <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{member.name}</td>
                 <td class="px-4 py-4 text-sm text-[#6b7280]">{member.email}</td>
                 <td class="px-4 py-4 text-sm text-[#111827]">{member.role}</td>
-                <td class="px-4 py-4 text-sm text-[#6b7280] whitespace-nowrap">{member.dateJoined}</td>
+                <td class="px-4 py-4 text-sm text-[#6b7280] whitespace-nowrap">{formatDate(member.dateJoined)}</td>
                 <td class="px-4 py-4">
                   <span class="text-xs font-semibold px-2.5 py-1 rounded-full
                                {member.status === 'active'

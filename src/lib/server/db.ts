@@ -434,3 +434,247 @@ export async function getAdminTeam(): Promise<AdminMember[]> {
     };
   });
 }
+
+
+
+// ─── Organization Details: Venues ─────────────────────────────────────────────
+
+export interface OrgVenueRow {
+  id: string;
+  name: string;
+  address: string;
+  spaces: number;
+  /** ⚠️ rating not stored; default 0 */
+  rating: number;
+  /** ⚠️ venue status not stored; default 'active' */
+  status: 'active' | 'inactive';
+}
+
+export async function getVenuesByOrganizationId(orgId: string): Promise<OrgVenueRow[]> {
+  const snap = await adminDb.collection('venue').where('orgId', '==', orgId).get();
+
+  return snap.docs.map((doc) => {
+    const d = doc.data();
+    const addressParts = [d['address'], d['city'], d['state']].filter(Boolean);
+
+    return {
+      id: doc.id,
+      name: (d['name'] as string) ?? 'Unnamed Venue',
+      address: addressParts.join(', '),
+      spaces: ((d['spaces'] as unknown[]) ?? []).length,
+      rating: 0, // ⚠️ not in schema
+      status: 'active' // ⚠️ not in schema
+    };
+  });
+}
+
+// ─── Organization Details: Reservations ──────────────────────────────────────
+
+export interface OrgReservationRow {
+  id: string;
+  client: string;
+  email: string;
+  venue: string;
+  space: string;
+  cost: string;
+  dateTime: string;
+  duration: string;
+  status: 'active' | 'inactive';
+  amountNumber: number;
+}
+
+function formatMoneyUSD(n: number) {
+  // keep output like "$27.91" (matches your UI data shape)
+  return `$${(Math.round(n * 100) / 100).toFixed(2)}`;
+}
+
+function formatDateTime(d: Date) {
+  // best-effort: "15 May 2020 8:00 pm" style (without changing UI layout)
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+  return `${day} ${month} ${year} ${time}`;
+}
+
+export async function getReservationsByOrganizationId(orgId: string): Promise<OrgReservationRow[]> {
+  // NOTE: Firestore needs index for where+orderBy sometimes. If it complains,
+  // you'll have to create the suggested index in Firebase console.
+  const snap = await adminDb
+    .collection('reservation')
+    .where('orgId', '==', orgId)
+    .orderBy('recordCreationTimeStamp', 'desc')
+    .get();
+
+  return snap.docs.map((doc) => {
+    const d = doc.data();
+
+    const amount = (d['totalCost'] as number) ?? 0;
+
+    // Timestamp: recordCreationTimeStamp seems like seconds in your other code
+    const createdAt = d['recordCreationTimeStamp']
+      ? new Date((d['recordCreationTimeStamp'] as number) * 1000)
+      : new Date();
+
+    // These fields are not clearly in schema, so safe fallback to "—"
+    const duration = (d['duration'] as string) ?? '—';
+    const space = (d['space'] as string) ?? '—';
+
+    const state = (d['reservationState'] as string) ?? 'NEW';
+    // Map to your UI's active/inactive badges without changing UI:
+    // "active" = not declined; "inactive" = declined/cancelled-like
+    const status: 'active' | 'inactive' = ['DECLINED'].includes(state) ? 'inactive' : 'active';
+
+    return {
+      id: doc.id,
+      client: (d['laceyName'] as string) ?? '—',
+      email: (d['laceyEmail'] as string) ?? '—',
+      venue: (d['venue'] as string) ?? '—',
+      space,
+      cost: formatMoneyUSD(amount),
+      dateTime: formatDateTime(createdAt),
+      duration,
+      status,
+      amountNumber: amount
+    };
+  });
+}
+
+// ─── Organization Details: Team / Members ────────────────────────────────────
+
+export interface OrgMemberRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  dateJoined: string;
+  status: 'active' | 'inactive';
+}
+
+
+// ─── Organization Details: Activity ──────────────────────────────────────────
+// If you don't have a real activity log collection, we should return [] (real).
+export type OrgActivityRow = OrgMemberRow;
+
+export async function getOrganizationActivityById(orgId: string): Promise<OrgActivityRow[]> {
+  // No activity source in schema you shared — return empty list instead of dummy data.
+  return [];
+}
+
+
+// Helper: parse Firestore-ish timestamps you may have (ms number or seconds number)
+function toISODate(value: unknown): string {
+  if (!value) return '';
+  // Most of your sample uses ms int (1760913755283)
+  if (typeof value === 'number') {
+    const ms = value > 10_000_000_000 ? value : value * 1000; // if seconds, convert
+    return new Date(ms).toISOString();
+  }
+  // If already ISO/string
+  if (typeof value === 'string') {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? '' : d.toISOString();
+  }
+  return '';
+}
+
+function formatDisplayName(profile?: Record<string, unknown>, fallbackEmail?: string) {
+  const firstName = (profile?.firstName as string) ?? '';
+  const lastName = (profile?.lastName as string) ?? '';
+  const full = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return full || fallbackEmail || '—';
+}
+
+type OrgMemberRef = {
+  userId: string;
+  userRole?: string; // "Owner", "Admin", etc (stored on orgMembers)
+  email?: string;    // sometimes orgMembers also carry email in your older code
+};
+
+// Fetch multiple users by uid (Firestore doc id)
+async function getUsersByUids(uids: string[]) {
+  const unique = [...new Set(uids.filter(Boolean))];
+  if (unique.length === 0) return new Map<string, Record<string, unknown>>();
+
+  // Firestore "in" query max is 10; chunk it
+  const chunkSize = 10;
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += chunkSize) chunks.push(unique.slice(i, i + chunkSize));
+
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      const snap = await adminDb.collection('user').where('__name__', 'in', chunk).get();
+      return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown>));
+    })
+  );
+
+  const map = new Map<string, Record<string, unknown>>();
+  results.flat().forEach((u) => map.set(u.id as string, u));
+  return map;
+}
+
+/** Team member shape used by your UI */
+export interface OrganizationTeamMember {
+  id: string; // userId
+  name: string;
+  email: string;
+  role: string;
+  dateJoined: string; // ISO string (or formatted later)
+  status: 'active' | 'inactive';
+}
+
+/**
+ * Returns org owner details + team members hydrated from `user` docs.
+ * - userRole is taken from organization.orgMembers[]
+ * - name + createdAt come from user doc
+ */
+export async function getOrganizationPeopleById(orgId: string): Promise<{
+  owner: { userId: string; name: string; email: string; role: string; dateJoined: string } | null;
+  team: OrganizationTeamMember[];
+}> {
+  const orgSnap = await adminDb.collection('organization').doc(orgId).get();
+  if (!orgSnap.exists) return { owner: null, team: [] };
+
+  const orgData = orgSnap.data() as Record<string, unknown>;
+  const orgMembers = (orgData['orgMembers'] as OrgMemberRef[]) ?? [];
+
+  const memberIds = orgMembers.map((m) => m.userId).filter(Boolean);
+  const usersById = await getUsersByUids(memberIds);
+
+  const hydratedTeam: OrganizationTeamMember[] = orgMembers.map((m) => {
+    const user = usersById.get(m.userId) ?? {};
+    const email = (user['email'] as string) ?? m.email ?? '';
+    const profile = (user['profile'] as Record<string, unknown>) ?? undefined;
+
+    return {
+      id: m.userId,
+      name: formatDisplayName(profile, email),
+      email,
+      role: m.userRole ?? 'Member',
+      dateJoined: toISODate(user['createdAt']),
+      status: 'active'
+    };
+  });
+
+  const ownerMember =
+    orgMembers.find((m) => (m.userRole ?? '').toLowerCase() === 'owner') ?? orgMembers[0] ?? null;
+
+  const ownerUser = ownerMember ? (usersById.get(ownerMember.userId) ?? {}) : null;
+  const ownerEmail =
+    (ownerUser?.['email'] as string) ?? ownerMember?.email ?? '';
+
+  const ownerProfile = (ownerUser?.['profile'] as Record<string, unknown>) ?? undefined;
+
+  const owner =
+    ownerMember
+      ? {
+          userId: ownerMember.userId,
+          name: formatDisplayName(ownerProfile, ownerEmail),
+          email: ownerEmail,
+          role: ownerMember.userRole ?? 'Owner', // this is your "title/position"
+          dateJoined: toISODate(ownerUser?.['createdAt'])
+        }
+      : null;
+
+  return { owner, team: hydratedTeam };
+}
