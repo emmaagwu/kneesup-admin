@@ -2,44 +2,25 @@
   import TopBar from '$components/layout/TopBar.svelte';
   import Badge from '$components/ui/Badge.svelte';
   import { goto } from '$app/navigation';
+  import type { PageData } from './$types';
+  import type { AdminOrganization } from '$lib/server/db';
 
-  type OrgStatus = 'active' | 'inactive' | 'blocked';
+  let { data }: { data: PageData } = $props();
 
-  interface Organization {
-    id: string;
-    name: string;
-    owner: string;
-    email: string;
-    revenue: number;
-    venues: number;
-    status: OrgStatus;
-  }
+  type OrgStatus = 'active' | 'suspended' | 'pending';
 
-  const organizations: Organization[] = [
-    { id: '1',  name: 'Veilar Co.',      owner: 'Jerome Bell',     email: 'felicia.reid@example.com', revenue: 1100,  venues: 11, status: 'active' },
-    { id: '2',  name: 'Socrates LLC.',   owner: 'Jane Cooper',     email: 'weaver@example.com',       revenue: 1200,  venues: 5,  status: 'active' },
-    { id: '3',  name: 'Greenbergs Inc.', owner: 'Esther Howard',   email: 'rivera@example.com',       revenue: 500,   venues: 8,  status: 'active' },
-    { id: '4',  name: 'eHamblix Ltd.',   owner: 'Eleanor Pena',    email: 'jennings@example.com',     revenue: 1900,  venues: 16, status: 'active' },
-    { id: '5',  name: 'Elvilloe',        owner: 'Guy Hawkins',     email: 'sanders@example.com',      revenue: 1400,  venues: 13, status: 'inactive' },
-    { id: '6',  name: 'Alizates Co.',    owner: 'Courtney Henry',  email: 'tanya.hill@example.com',   revenue: 900,   venues: 19, status: 'active' },
-    { id: '7',  name: 'Curcee Ltd.',     owner: 'Ronald Richards', email: 'simmons@example.com',      revenue: 600,   venues: 2,  status: 'inactive' },
-    { id: '8',  name: 'Itionom Inc.',    owner: 'Devon Lane',      email: 'baker@example.com',        revenue: 100,   venues: 1,  status: 'active' },
-    { id: '9',  name: 'Habidence Inc.',  owner: 'Theresa Webb',    email: 'lawson@example.com',       revenue: 1600,  venues: 20, status: 'blocked' },
-    { id: '10', name: 'Creative Hub',    owner: 'John Doe',        email: 'johndoe@example.com',      revenue: 20480, venues: 10, status: 'active' },
-  ];
-
-  const summaryStats = [
-    { label: 'All Organizations', value: 85, change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
-    { label: 'Active',            value: 57, change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
-    { label: 'Inactive',          value: 23, change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
-    { label: 'Blocked',           value: 5,  change: 5,  icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>` },
-  ];
+  const summaryStats = $derived([
+    { label: 'All Organizations', value: data.organizations.length, change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
+    { label: 'Active',            value: data.organizations.filter(o => o.status === 'active').length,    change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
+    { label: 'Suspended',         value: data.organizations.filter(o => o.status === 'suspended').length, change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
+    { label: 'Pending',           value: data.organizations.filter(o => o.status === 'pending').length,   change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>` },
+  ]);
 
   type StatusVariant = 'success' | 'warning' | 'error' | 'neutral';
   const statusMap: Record<OrgStatus, { label: string; variant: StatusVariant; color: string }> = {
-    active:   { label: 'Active',   variant: 'success', color: 'text-[#16a34a]' },
-    inactive: { label: 'Inactive', variant: 'warning', color: 'text-[#d97706]' },
-    blocked:  { label: 'Blocked',  variant: 'error',   color: 'text-[#dc2626]' },
+    active:    { label: 'Active',    variant: 'success', color: 'text-[#16a34a]' },
+    suspended: { label: 'Suspended', variant: 'warning', color: 'text-[#d97706]' },
+    pending:   { label: 'Pending',   variant: 'neutral', color: 'text-[#6b7280]' },
   };
 
   // ── Table state ───────────────────────────────────────────────────
@@ -48,9 +29,8 @@
   let currentPage = $state(1);
   const perPage = 10;
 
-  let filtered  = $derived(organizations.filter(o =>
+  let filtered  = $derived(data.organizations.filter((o: AdminOrganization) =>
     o.name.toLowerCase().includes(search.toLowerCase()) ||
-    o.owner.toLowerCase().includes(search.toLowerCase()) ||
     o.email.toLowerCase().includes(search.toLowerCase())
   ));
   let paginated  = $derived(filtered.slice((currentPage - 1) * perPage, currentPage * perPage));
@@ -60,7 +40,7 @@
   function closeMenu() { activeMenu = null; }
   function formatCurrency(n: number) { return '$' + n.toLocaleString('en-US'); }
 
-  function handleAction(action: string, org: Organization) {
+  function handleAction(action: string, org: AdminOrganization) {
     if (action === 'view') goto(`/dashboard/organizations/${org.id}`);
     if (action === 'edit') goto(`/dashboard/organizations/${org.id}/edit`);
     closeMenu();
@@ -509,9 +489,7 @@
         <thead>
           <tr class="border-b border-[#f0f0f0]">
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-[#6b7280]">Name</th>
-            <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Owner</th>
-            <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Email</th>
-            <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Revenue ($)</th>
+            <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Owner Email</th>
             <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">No. of Venues</th>
             <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Status</th>
             <th class="px-4 py-3.5"></th>
@@ -526,13 +504,11 @@
                   {org.name}
                 </a>
               </td>
-              <td class="px-4 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{org.owner}</td>
-              <td class="px-4 py-4 text-sm text-[#6b7280]">{org.email}</td>
-              <td class="px-4 py-4 text-sm text-[#111827]">{formatCurrency(org.revenue)}</td>
-              <td class="px-4 py-4 text-sm text-[#111827]">{org.venues}</td>
+              <td class="px-4 py-4 text-sm text-[#6b7280]">{org.email || '—'}</td>
+              <td class="px-4 py-4 text-sm text-[#111827]">{org.venueCount}</td>
               <td class="px-4 py-4">
-                <span class="text-sm font-medium {statusMap[org.status].color}">
-                  {statusMap[org.status].label}
+                <span class="text-sm font-medium {statusMap[org.status as OrgStatus]?.color ?? 'text-[#6b7280]'}">
+                  {statusMap[org.status as OrgStatus]?.label ?? org.status}
                 </span>
               </td>
               <td class="px-4 py-4 relative">
@@ -589,13 +565,11 @@
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-[#111827]">{org.name}</p>
-                <p class="text-xs text-[#6b7280] mt-0.5">{org.owner}</p>
-                <p class="text-xs text-[#9ca3af] mt-0.5 truncate">{org.email}</p>
+                <p class="text-xs text-[#9ca3af] mt-0.5 truncate">{org.email || '—'}</p>
                 <div class="flex items-center gap-3 mt-2">
-                  <span class="text-xs text-[#374151] font-medium">{formatCurrency(org.revenue)}</span>
-                  <span class="text-xs text-[#9ca3af]">{org.venues} venues</span>
-                  <span class="text-xs font-semibold {statusMap[org.status].color}">
-                    {statusMap[org.status].label}
+                  <span class="text-xs text-[#9ca3af]">{org.venueCount} venues</span>
+                  <span class="text-xs font-semibold {statusMap[org.status as OrgStatus]?.color ?? 'text-[#6b7280]'}">
+                    {statusMap[org.status as OrgStatus]?.label ?? org.status}
                   </span>
                 </div>
               </div>

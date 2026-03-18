@@ -1,38 +1,19 @@
 <script lang="ts">
   import TopBar from '$components/layout/TopBar.svelte';
   import { goto } from '$app/navigation';
+  import type { PageData } from './$types';
+  import type { AdminVenue } from '$lib/server/db';
+
+  let { data }: { data: PageData } = $props();
 
   type VenueStatus = 'active' | 'inactive' | 'blocked';
 
-  interface Venue {
-    id: string;
-    name: string;
-    organization: string;
-    address: string;
-    rating: number;
-    spaces: number;
-    status: VenueStatus;
-  }
-
-  const venues: Venue[] = [
-    { id: '1',  name: 'Veilar Co.',      organization: 'AeroShift',    address: '4517 Washington Ave. Manchester, Kentucky 39495',  rating: 1.5, spaces: 11, status: 'active' },
-    { id: '2',  name: 'Socrates LLC.',   organization: 'SwiftPulse',   address: '3891 Ranchview Dr. Richardson, California 62639',  rating: 3.0, spaces: 5,  status: 'active' },
-    { id: '3',  name: 'Greenbergs Inc.', organization: 'TerraNex',     address: '2972 Westheimer Rd. Santa Ana, Illinois 85486',    rating: 3.5, spaces: 8,  status: 'active' },
-    { id: '4',  name: 'eHamblix Ltd.',   organization: 'InfraLink',    address: '6391 Elgin St. Celina, Delaware 10299',            rating: 2.6, spaces: 16, status: 'active' },
-    { id: '5',  name: 'Elvilloe',        organization: 'BioCore',      address: '1901 Thornridge Cir. Shiloh, Hawaii 81063',        rating: 2.9, spaces: 13, status: 'inactive' },
-    { id: '6',  name: 'Alizates Co.',    organization: 'AquaSparkle',  address: '8502 Preston Rd. Inglewood, Maine 98380',          rating: 2.1, spaces: 19, status: 'active' },
-    { id: '7',  name: 'Curcee Ltd.',     organization: 'EcoFusion',    address: '2464 Royal Ln. Mesa, New Jersey 45463',            rating: 4.2, spaces: 2,  status: 'inactive' },
-    { id: '8',  name: 'Itionom Inc.',    organization: 'StellarGlobe', address: '2118 Thornridge Cir. Syracuse, Connecticut 35624', rating: 2.3, spaces: 1,  status: 'active' },
-    { id: '9',  name: 'Habidence Inc.',  organization: 'ZenithGlide',  address: '2715 Ash Dr. San Jose, South Dakota 83475',        rating: 2.8, spaces: 20, status: 'blocked' },
-    { id: '10', name: 'Creative Hub',    organization: 'AeroShift',    address: '3891 Ranchview Dr. Richardson, California 62639',  rating: 4.5, spaces: 7,  status: 'active' },
-  ];
-
-  const summaryStats = [
-    { label: 'All Venues', value: 280, change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
-    { label: 'Active',     value: 205, change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
-    { label: 'Inactive',   value: 63,  change: 12, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
-    { label: 'Blocked',    value: 12,  change: 5,  icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>` },
-  ];
+  const summaryStats = $derived([
+    { label: 'All Venues', value: data.venues.length,                                              change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
+    { label: 'Active',     value: data.venues.filter(v => v.status === 'active').length,           change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
+    { label: 'Inactive',   value: data.venues.filter(v => v.status === 'inactive').length,         change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
+    { label: 'Blocked',    value: data.venues.filter(v => v.status === 'blocked').length,          change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>` },
+  ]);
 
   const statusColors: Record<VenueStatus, string> = {
     active:   'bg-[#f0fdf4] text-[#16a34a]',
@@ -40,15 +21,16 @@
     blocked:  'bg-[#fef2f2] text-[#dc2626]',
   };
 
+
   // ── Table state ───────────────────────────────────────────────────
   let search      = $state('');
   let activeMenu  = $state<string | null>(null);
   let currentPage = $state(1);
   const perPage   = 10;
 
-  let filtered   = $derived(venues.filter(v =>
+  let filtered   = $derived((data.venues as AdminVenue[]).filter((v: AdminVenue) =>
     v.name.toLowerCase().includes(search.toLowerCase()) ||
-    v.organization.toLowerCase().includes(search.toLowerCase()) ||
+    v.orgName.toLowerCase().includes(search.toLowerCase()) ||
     v.address.toLowerCase().includes(search.toLowerCase())
   ));
   let paginated  = $derived(filtered.slice((currentPage - 1) * perPage, currentPage * perPage));
@@ -184,7 +166,7 @@
     brochure = file; brochureName = file.name;
   }
 
-  const organizations = ['AeroShift', 'SwiftPulse', 'TerraNex', 'InfraLink', 'BioCore', 'AquaSparkle', 'EcoFusion', 'StellarGlobe', 'ZenithGlide'];
+  const organizations = $derived([...new Set((data.venues as AdminVenue[]).map(v => v.orgName))]);
   const countries = ['United States', 'United Kingdom', 'Nigeria', 'Canada', 'Australia'];
   const usStates = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
 </script>
@@ -740,12 +722,12 @@
                 <a href="/dashboard/venues/{venue.id}"
                    class="hover:text-[#0d9488] transition-colors">{venue.name}</a>
               </td>
-              <td class="px-4 py-4 text-sm text-[#6b7280] whitespace-nowrap">{venue.organization}</td>
+              <td class="px-4 py-4 text-sm text-[#6b7280] whitespace-nowrap">{venue.orgName}</td>
               <td class="px-4 py-4 text-sm text-[#6b7280] max-w-[220px] truncate">{venue.address}</td>
-              <td class="px-4 py-4 text-sm text-[#111827]">{venue.rating}</td>
-              <td class="px-4 py-4 text-sm text-[#111827]">{venue.spaces}</td>
+              <td class="px-4 py-4 text-sm text-[#111827]">—</td>
+              <td class="px-4 py-4 text-sm text-[#111827]">{venue.spacesCount}</td>
               <td class="px-4 py-4">
-                <span class="text-xs font-semibold px-2.5 py-1 rounded-full {statusColors[venue.status]}">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full {statusColors[venue.status as VenueStatus] ?? 'bg-gray-100 text-gray-600'}">
                   {venue.status.charAt(0).toUpperCase() + venue.status.slice(1)}
                 </span>
               </td>

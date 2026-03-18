@@ -2,14 +2,17 @@
   import Sidebar from '$components/layout/Sidebar.svelte';
   import MobileNav from '$components/layout/MobileNav.svelte';
   import { authStore } from '$lib/stores/auth.store';
-  import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
   import { sidebarOpen } from '$lib/stores/ui.store';
+  import type { LayoutData } from './$types';
 
-  // Redirect to landing if not authenticated
+  let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
+
+  // Hydrate the client-side auth store from the server-verified user.
+  // This ensures the store is populated immediately without a client-side
+  // Firebase round-trip, avoiding flickers on page load.
   $effect(() => {
-    if (!$authStore.user && !$authStore.loading) {
-      goto('/');
+    if (data.user && !$authStore.user) {
+      authStore.setUser(data.user);
     }
   });
 </script>
@@ -24,7 +27,7 @@
            {$sidebarOpen ? 'lg:pl-[220px]' : 'lg:pl-[60px]'}"
   >
     <main class="flex-1 pb-20 lg:pb-0">
-      <slot />
+      {@render children()}
     </main>
   </div>
 

@@ -6,6 +6,8 @@
   import { sidebarOpen } from '$lib/stores/ui.store';
   import { mainNavItems, supportNavItems } from './nav-items';
   import { goto } from '$app/navigation';
+  import { signOut } from "firebase/auth";
+  import { auth } from "$lib/firebase/client";
 
   let user = $derived($authStore.user);
   let currentPath = $derived($page.url.pathname);
@@ -17,8 +19,13 @@
   }
 
   async function handleLogout() {
+    console.log('logging out...');
+    await signOut(auth);
+    await fetch('/api/auth/session', {
+    method: 'DELETE'
+    });
     authStore.reset();
-    goto('/');
+    goto('/login');
   }
 </script>
 
@@ -141,7 +148,7 @@
             <p class="text-[11px] text-[#9ca3af] truncate">{user.email}</p>
           </div>
           <button
-            onclick={handleLogout}
+            on:click={handleLogout}
             class="text-[#9ca3af] hover:text-[#374151] transition-colors p-1 rounded"
             title="Logout"
           >
@@ -153,7 +160,7 @@
       {:else}
         <!-- Collapsed: just avatar centered -->
         <div class="flex justify-center">
-          <button onclick={handleLogout} title="Logout">
+          <button on:click={handleLogout} title="Logout">
             <Avatar name={user.displayName} src={user.photoURL} size="sm" />
           </button>
         </div>

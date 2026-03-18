@@ -5,113 +5,57 @@
   import Badge from '$components/ui/Badge.svelte';
   import { authStore } from '$lib/stores/auth.store';
   import { formatCurrency, formatDate } from '$utils/helpers';
+  import type { PageData } from './$types';
+
+  let { data }: { data: PageData } = $props();
 
   let user = $derived($authStore.user);
 
-  const stats = [
+  // ── Real stats from Firestore ─────────────────────────────────────────────
+  const stats = $derived([
     {
       label: 'Total Gross Revenue',
-      value: '$20,480',
-      change: 12,
+      value: formatCurrency(data.stats.totalGrossRevenue),
+      change: 0,
       changeLabel: 'vs last week',
       icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>`
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
     },
     {
       label: 'Total Reservations',
-      value: '1,454',
-      change: 12,
+      value: data.stats.totalReservations.toLocaleString(),
+      change: 0,
       changeLabel: 'vs last week',
       icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-      </svg>`
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`
     },
     {
       label: 'All Organizations',
-      value: '23',
-      change: 12,
+      value: data.stats.totalOrganizations.toLocaleString(),
+      change: 0,
       changeLabel: 'vs last week',
       icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-      </svg>`
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`
     },
     {
       label: 'Venues',
-      value: '500',
-      change: 5,
+      value: data.stats.totalVenues.toLocaleString(),
+      change: 0,
       changeLabel: 'vs last week',
       icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
         <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>`
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`
     }
-  ];
-
-  const recentReservations = [
-    {
-      id: 'RES-001',
-      guest: 'Adeola Martins',
-      venue: 'The Grand Hall',
-      org: 'Lekki Events Co.',
-      date: '2025-03-14',
-      amount: 450,
-      status: 'confirmed'
-    },
-    {
-      id: 'RES-002',
-      guest: 'Chukwuemeka Obi',
-      venue: 'Sunset Rooftop',
-      org: 'Lagos Spaces Ltd.',
-      date: '2025-03-13',
-      amount: 320,
-      status: 'pending'
-    },
-    {
-      id: 'RES-003',
-      guest: 'Fatima Bello',
-      venue: 'Garden Pavilion',
-      org: 'Abuja Venues Inc.',
-      date: '2025-03-12',
-      amount: 180,
-      status: 'completed'
-    },
-    {
-      id: 'RES-004',
-      guest: 'Seun Adeyemi',
-      venue: 'Waterfront Deck',
-      org: 'VIsland Events',
-      date: '2025-03-11',
-      amount: 600,
-      status: 'cancelled'
-    },
-    {
-      id: 'RES-005',
-      guest: 'Ngozi Okafor',
-      venue: 'The Loft Studio',
-      org: 'Lekki Events Co.',
-      date: '2025-03-10',
-      amount: 240,
-      status: 'confirmed'
-    }
-  ];
-
-  const recentOrgs = [
-    { name: 'Lekki Events Co.', venues: 48, revenue: 8200, status: 'active' },
-    { name: 'Lagos Spaces Ltd.', venues: 34, revenue: 5400, status: 'active' },
-    { name: 'Abuja Venues Inc.', venues: 22, revenue: 3100, status: 'active' },
-    { name: 'VIsland Events', venues: 15, revenue: 1940, status: 'suspended' },
-    { name: 'PortHarcourt Hub', venues: 9, revenue: 820, status: 'pending' }
-  ];
+  ]);
 
   type StatusVariant = 'success' | 'warning' | 'error' | 'info' | 'neutral';
 
   const statusMap: Record<string, { label: string; variant: StatusVariant }> = {
     confirmed: { label: 'Confirmed', variant: 'success' },
-    pending: { label: 'Pending', variant: 'warning' },
+    pending:   { label: 'Pending',   variant: 'warning' },
     completed: { label: 'Completed', variant: 'info' },
     cancelled: { label: 'Cancelled', variant: 'error' },
-    active: { label: 'Active', variant: 'success' },
+    active:    { label: 'Active',    variant: 'success' },
     suspended: { label: 'Suspended', variant: 'error' }
   };
 </script>
@@ -164,7 +108,7 @@
   </div>
 </div>
 
-  <!-- Stat Cards -->
+  <!-- Stat Cards — real data -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
     {#each stats as stat}
       <StatCard
@@ -208,14 +152,14 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f9fafb]">
-            {#each recentReservations as res}
+            {#each data.recentReservations as res}
               <tr class="hover:bg-[#fafafa] transition-colors">
                 <td class="px-5 py-3.5">
                   <div class="flex items-center gap-2.5">
                     <Avatar name={res.guest} size="xs" />
                     <div>
                       <p class="font-medium text-[#111827] text-sm">{res.guest}</p>
-                      <p class="text-[11px] text-[#9ca3af]">{res.id}</p>
+                      <p class="text-[11px] text-[#9ca3af]">{res.id.slice(0, 8)}…</p>
                     </div>
                   </div>
                 </td>
@@ -233,6 +177,12 @@
                   </Badge>
                 </td>
               </tr>
+            {:else}
+              <tr>
+                <td colspan="5" class="px-5 py-8 text-center text-sm text-[#9ca3af]">
+                  No reservations yet.
+                </td>
+              </tr>
             {/each}
           </tbody>
         </table>
@@ -240,7 +190,7 @@
 
       <!-- Mobile: card list -->
       <div class="sm:hidden divide-y divide-[#f9fafb]">
-        {#each recentReservations as res}
+        {#each data.recentReservations as res}
           <div class="px-4 py-3.5 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
               <Avatar name={res.guest} size="sm" />
@@ -256,16 +206,18 @@
               </Badge>
             </div>
           </div>
+        {:else}
+          <p class="px-4 py-8 text-center text-sm text-[#9ca3af]">No reservations yet.</p>
         {/each}
       </div>
     </div>
 
-    <!-- Top Organizations (1/3 width) -->
+    <!-- Top Organizations (1/3 width) — real data -->
     <div class="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
       <div class="px-5 py-4 border-b border-[#f3f4f6] flex items-center justify-between">
         <div>
           <h2 class="font-semibold text-[#111827] text-sm">Top Organizations</h2>
-          <p class="text-xs text-[#9ca3af] mt-0.5">By revenue this week</p>
+          <p class="text-xs text-[#9ca3af] mt-0.5">By total revenue</p>
         </div>
         <a
           href="/dashboard/organizations"
@@ -276,7 +228,7 @@
       </div>
 
       <div class="divide-y divide-[#f9fafb]">
-        {#each recentOrgs as org, i}
+        {#each data.topOrganizations as org, i}
           <div class="px-5 py-3.5 flex items-center gap-3 hover:bg-[#fafafa] transition-colors">
             <span
               class="w-6 h-6 rounded-full bg-[#f3f4f6] text-[#9ca3af] text-xs font-bold
@@ -295,12 +247,14 @@
               </Badge>
             </div>
           </div>
+        {:else}
+          <p class="px-5 py-8 text-center text-sm text-[#9ca3af]">No organizations yet.</p>
         {/each}
       </div>
     </div>
   </div>
 
-  <!-- Bottom row: Quick actions + Activity -->
+  <!-- Bottom row: Quick actions -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
     <!-- Quick actions -->
