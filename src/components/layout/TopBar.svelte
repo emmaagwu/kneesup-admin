@@ -3,6 +3,9 @@
   import Avatar from '$components/ui/Avatar.svelte';
   import { authStore } from '$lib/stores/auth.store';
   import { sidebarOpen, toggleSidebar } from '$lib/stores/ui.store';
+  import { goto } from '$app/navigation';
+  import { signOut } from "firebase/auth";
+  import { auth } from "$lib/firebase/client";
 
   interface Action {
     label: string;
@@ -21,6 +24,7 @@
   } = $props();
 
   let user = $derived($authStore.user);
+  let dropdownOpen = $state(false);
 
   let computedBreadcrumbs = $derived(
     breadcrumbs.length
@@ -40,7 +44,38 @@
           return crumbs;
         })()
   );
+
+  function toggleDropdown() {
+    dropdownOpen = !dropdownOpen;
+  }
+
+  function closeDropdown() {
+    dropdownOpen = false;
+  }
+
+  async function handleLogout() {
+    console.log("Logging out...");
+    closeDropdown();
+    await signOut(auth);
+    await fetch('/api/auth/session', {
+      method: 'DELETE'
+    });
+    authStore.reset();
+    goto('/login');
+  }
 </script>
+
+<!-- Click-outside overlay to close dropdown -->
+{#if dropdownOpen}
+  <div
+    class="fixed inset-0 z-10"
+    role="button"
+    tabindex="-1"
+    aria-label="Close menu"
+    onclick={closeDropdown}
+    onkeydown={(e) => e.key === 'Escape' && closeDropdown()}
+  />
+{/if}
 
 <header class="sticky top-0 z-20 bg-white border-b border-[#f0f0f0] px-4 lg:px-6 h-14 flex items-center justify-between gap-4">
 
@@ -103,17 +138,52 @@
     <!-- Divider -->
     <div class="w-px h-5 bg-[#e5e7eb] mx-1" />
 
-    <!-- User avatar + chevron -->
+    <!-- User avatar + chevron with dropdown -->
     {#if user}
-      <button class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-[#f3f4f6] transition-colors">
-        <Avatar name={user.displayName} src={user.photoURL} size="sm" />
-        <span class="hidden sm:block text-sm font-medium text-[#374151] max-w-[100px] truncate">
-          {user.displayName.split(' ')[0]}
-        </span>
-        <svg class="w-3.5 h-3.5 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+      <div class="relative">
+        <button
+          onclick={toggleDropdown}
+          class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-[#f3f4f6] transition-colors"
+          aria-expanded={dropdownOpen}
+          aria-haspopup="true"
+        >
+          <Avatar name={user.displayName} src={user.photoURL} size="sm" />
+          <span class="hidden sm:block text-sm font-medium text-[#374151] max-w-[100px] truncate">
+            {user.displayName.split(' ')[0]}
+          </span>
+          <svg
+            class="w-3.5 h-3.5 text-[#9ca3af] transition-transform duration-200 {dropdownOpen ? 'rotate-180' : ''}"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <!-- Dropdown menu -->
+        {#if dropdownOpen}
+          <div class="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-[#f0f0f0] shadow-lg shadow-black/5 py-1 z-50">
+            <!-- User info header -->
+            <div class="px-3 py-2.5 border-b border-[#f5f5f5]">
+              <p class="text-sm font-semibold text-[#111827] truncate">{user.displayName}</p>
+              <p class="text-[11px] text-[#9ca3af] truncate mt-0.5">{user.email}</p>
+            </div>
+
+            <!-- Logout -->
+            <button
+              onclick={handleLogout}
+              class="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-[#374151] hover:bg-[#fef2f2] hover:text-red-600 transition-colors group"
+            >
+              <svg class="w-4 h-4 text-[#9ca3af] group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Log out</span>
+            </button>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 </header>
