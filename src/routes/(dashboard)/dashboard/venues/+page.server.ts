@@ -1,86 +1,58 @@
-import type { PageServerLoad, Actions } from './$types';
-import { getAllVenues, createVenue, getAllOrganizations } from '$lib/server/db';
+import type { PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { deleteVenuesCascade, getAllVenues, previewDeleteVenuesCascade } from '$lib/server/db';
 
-export const load: PageServerLoad = async () => {
-  const [venues, organizations] = await Promise.all([
-    getAllVenues(),
-    getAllOrganizations()
-  ]);
-  
-  return { 
-    venues,
-    organizations: organizations.map(org => ({ id: org.id, name: org.name }))
-  };
+export const load: PageServerLoad = async ({ locals }) => {
+  const venues = await getAllVenues();
+  return { venues, canDelete: locals.user?.role === 'developer' };
 };
 
 export const actions: Actions = {
-  createVenue: async ({ request }) => {
+  previewSelectedVenues: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can preview deletion impact.' });
+    }
+
     const formData = await request.formData();
-    
-    const venueName = formData.get('venueName') as string;
-    const venueDescription = formData.get('venueDescription') as string;
-    const venueOrg = formData.get('venueOrg') as string;
-    const venueAddress = formData.get('venueAddress') as string;
-    const venueCity = formData.get('venueCity') as string;
-    const venueState = formData.get('venueState') as string;
-    const venueCountry = formData.get('venueCountry') as string;
-    const venueZip = formData.get('venueZip') as string;
-    const phoneNumber = formData.get('phoneNumber') as string;
-    const email = formData.get('email') as string;
-    const photo = formData.get('photo') as string | null; // Base64 string
-
-    // Validation
-    if (!venueName || !venueName.trim()) {
-      return fail(400, { error: 'Venue name is required' });
+    const venueIds = formData.getAll('venueIds').map((value) => String(value).trim()).filter(Boolean);
+    if (venueIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one venue to preview.' });
     }
 
-    if (!venueOrg || !venueOrg.trim()) {
-      return fail(400, { error: 'Organization is required' });
+    const results = await previewDeleteVenuesCascade(venueIds);
+    const existing = results.filter((result) => result.venueExists);
+    const missing = results.length - existing.length;
+
+    return {
+      successMessage: `Dry run complete for ${venueIds.length} venue(s).`,
+      dryRunReport: {
+        venues: existing.length,
+        reservations: existing.reduce((sum, result) => sum + result.reservations, 0),
+        guests: existing.reduce((sum, result) => sum + result.guests, 0),
+        detachedFromOrganization: existing.reduce((sum, result) => sum + result.detachedFromOrganization, 0),
+        missing
+      }
+    };
+  },
+
+  deleteSelectedVenues: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete venues.' });
     }
 
-    if (!venueAddress || !venueAddress.trim()) {
-      return fail(400, { error: 'Address is required' });
+    const formData = await request.formData();
+    const venueIds = formData.getAll('venueIds').map((value) => String(value).trim()).filter(Boolean);
+    if (venueIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one venue to delete.' });
     }
 
-    if (!venueCity || !venueCity.trim()) {
-      return fail(400, { error: 'City is required' });
-    }
+    const results = await deleteVenuesCascade(venueIds);
+    const deleted = results.filter((result) => result.deletedVenue);
+    const missing = results.length - deleted.length;
 
-    if (!venueState || !venueState.trim()) {
-      return fail(400, { error: 'State is required' });
-    }
-
-    if (!venueCountry || !venueCountry.trim()) {
-      return fail(400, { error: 'Country is required' });
-    }
-
-    try {
-      // Create venue in Firestore
-      const venueId = await createVenue({
-        name: venueName.trim(),
-        description: venueDescription?.trim() || undefined,
-        orgId: venueOrg,
-        address: venueAddress.trim(),
-        city: venueCity.trim(),
-        state: venueState.trim(),
-        country: venueCountry.trim(),
-        postalCode: venueZip?.trim() || undefined,
-        phoneNumber: phoneNumber?.trim() || undefined,
-        email: email?.trim() || undefined,
-        image: photo || undefined  // Pass base64 string directly
-      });
-
-      return {
-        success: true,
-        venueId,
-        message: 'Venue created successfully'
-      };
-    } catch (error) {
-      console.error('Error creating venue:', error);
-      return fail(500, {
-        error: 'Failed to create venue. Please try again.'
-      });
-    }
+    return {
+      successMessage: `Deleted ${deleted.length} venue(s), ${deleted.reduce((sum, row) => sum + row.deletedReservations, 0)} reservation(s), ${deleted.reduce((sum, row) => sum + row.deletedGuests, 0)} guest record(s).${missing ? ` Skipped ${missing} missing venue(s).` : ''}`
+    };
   }
 };

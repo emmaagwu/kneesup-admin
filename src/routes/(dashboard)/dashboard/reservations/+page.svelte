@@ -1,68 +1,88 @@
 <script lang="ts">
   import TopBar from '$components/layout/TopBar.svelte';
   import Badge from '$components/ui/Badge.svelte';
+  import Avatar from '$components/ui/Avatar.svelte';
+  import { formatCurrency, formatDate } from '$utils/helpers';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
-
-  let search = $state('');
-  let filterPeriod = $state('30days');
-  let filterStatus = $state('all');
-
-  // Real stats from Firestore data
-  const stats = $derived([
-    {
-      label: 'All Reservations',
-      value: data.reservations.length,
-      change: '+12%',
-      changeLabel: 'vs last week',
-      status: 'positive'
-    },
-    {
-      label: 'Active Reservations',
-      value: data.reservations.filter(r => r.status === 'confirmed').length,
-      change: '+12%',
-      changeLabel: 'vs last week',
-      status: 'positive'
-    },
-    {
-      label: 'Completed Reservations',
-      value: data.reservations.filter(r => r.status === 'completed').length,
-      change: '+12%',
-      changeLabel: 'vs last week',
-      status: 'positive'
-    },
-    {
-      label: 'Cancelled Reservations',
-      value: data.reservations.filter(r => r.status === 'cancelled').length,
-      change: '+5%',
-      changeLabel: 'vs last week',
-      status: 'negative'
-    }
-  ]);
-
-  const reservations = data.reservations;
-
-  const getStatusVariant = (status: string) => {
-    const variants: Record<string, 'success' | 'info' | 'error'> = {
-      'completed': 'success',
-      'confirmed': 'info',
-      'cancelled': 'error',
-      'pending': 'info'
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+    dryRunReport?: {
+      reservations: number;
+      guests: number;
+      missing: number;
     };
-    return variants[status] || 'info';
   };
 
-  let filtered = $derived(reservations.filter(r => {
-    const matchSearch = search === '' || 
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
+
+  type ResStatus = 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  type StatusVariant = 'success' | 'warning' | 'info' | 'error';
+
+  const statusMap: Record<ResStatus, { label: string; variant: StatusVariant }> = {
+    confirmed: { label: 'Confirmed', variant: 'success' },
+    pending:   { label: 'Pending',   variant: 'warning' },
+    completed: { label: 'Completed', variant: 'info' },
+    cancelled: { label: 'Cancelled', variant: 'error' }
+  };
+
+  let search = $state('');
+  let filterStatus = $state('all');
+  let selectedReservationIds = $state<string[]>([]);
+
+  let filtered = $derived(data.reservations.filter(r => {
+    const matchSearch =
       r.guest.toLowerCase().includes(search.toLowerCase()) ||
-      r.guestEmail.toLowerCase().includes(search.toLowerCase()) ||
-      r.org.toLowerCase().includes(search.toLowerCase()) ||
-      r.venue.toLowerCase().includes(search.toLowerCase());
-    
+      r.venue.toLowerCase().includes(search.toLowerCase()) ||
+      r.id.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === 'all' || r.status === filterStatus;
     return matchSearch && matchStatus;
   }));
+
+  let allFilteredSelected = $derived(
+    filtered.length > 0 && filtered.every((reservation) => selectedReservationIds.includes(reservation.id))
+  );
+
+  let totalAmount = $derived(filtered.reduce((sum, r) => sum + r.amount, 0));
+
+  function toggleReservationSelection(reservationId: string, checked: boolean) {
+    if (checked) {
+      if (!selectedReservationIds.includes(reservationId)) {
+        selectedReservationIds = [...selectedReservationIds, reservationId];
+      }
+      return;
+    }
+
+    selectedReservationIds = selectedReservationIds.filter((id) => id !== reservationId);
+  }
+
+  function toggleSelectAllFiltered(checked: boolean) {
+    if (!checked) {
+      selectedReservationIds = selectedReservationIds.filter((id) => !filtered.some((reservation) => reservation.id === id));
+      return;
+    }
+
+    selectedReservationIds = Array.from(new Set([...selectedReservationIds, ...filtered.map((reservation) => reservation.id)]));
+  }
+
+  function selectAllRecords() {
+    selectedReservationIds = data.reservations.map((reservation) => reservation.id);
+  }
+
+  function clearSelection() {
+    selectedReservationIds = [];
+  }
+
+  function confirmBulkDelete(event: SubmitEvent) {
+    if (selectedReservationIds.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    if (!confirm(`Delete ${selectedReservationIds.length} reservation(s) and related guest records? This cannot be undone.`)) {
+      event.preventDefault();
+    }
+  }
 </script>
 
 <svelte:head>
@@ -70,137 +90,177 @@
 </svelte:head>
 
 <TopBar
-  breadcrumbs={[{ label: 'Reservations', href: '/dashboard/reservations' }, { label: 'All Reservations' }]}
+  breadcrumbs={[{ label: 'Home', href: '/dashboard' }, { label: 'Reservations' }]}
 />
 
-<div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-  <!-- Header -->
-  <div>
-    <h1 class="text-3xl font-bold text-[#111827]">Reservations</h1>
+<div class="px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+  {#if form?.successMessage}
+    <div class="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+      {form.successMessage}
+    </div>
+  {/if}
+  {#if form?.errorMessage}
+    <div class="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+      {form.errorMessage}
+    </div>
+  {/if}
+  {#if form?.dryRunReport}
+    <div class="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm text-[#1e3a8a]">
+      Dry run: {form.dryRunReport.reservations} reservation(s) and {form.dryRunReport.guests} guest record(s) will be affected.{#if form.dryRunReport.missing} Missing reservations: {form.dryRunReport.missing}.{/if}
+    </div>
+  {/if}
+
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-[#111827]">Reservations</h1>
+      <p class="text-sm text-[#9ca3af] mt-0.5">All bookings across every venue on the platform.</p>
+    </div>
+    <div class="hidden sm:block text-right">
+      <p class="text-sm text-[#9ca3af]">Total shown</p>
+      <p class="text-lg font-bold text-[#111827]">{formatCurrency(totalAmount)}</p>
+    </div>
   </div>
 
-  <!-- Stat Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    {#each stats as stat}
-      <div class="bg-white rounded-xl border border-[#e5e7eb] p-5">
-        <div class="flex items-start justify-between mb-3">
-          <p class="text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">{stat.label}</p>
-          <svg class="w-4 h-4 text-[#d1d5db]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </div>
-        <p class="text-3xl font-bold text-[#111827] mb-3">{stat.value}</p>
-        <div class="flex items-center gap-1">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-          <span class={`text-xs font-medium ${stat.status === 'positive' ? 'text-[#10b981]' : 'text-[#ef4444]'}`}>
-            {stat.change}
-          </span>
-          <span class="text-xs text-[#9ca3af]">{stat.changeLabel}</span>
-        </div>
-      </div>
-    {/each}
-  </div>
-
-  <!-- Search and Filter -->
-  <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-    <div class="relative w-full sm:w-64">
+  <div class="flex flex-col sm:flex-row gap-3">
+    <div class="relative flex-1">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
-      <input 
-        type="text" 
-        placeholder="Search" 
-        bind:value={search}
-        class="w-full pl-9 pr-4 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent" 
-      />
+      <input type="text" placeholder="Search by guest, venue or ID..." bind:value={search}
+        class="w-full pl-9 pr-4 py-2.5 text-sm border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent" />
     </div>
-    
-    <div class="flex gap-2">
-      <button class="inline-flex items-center gap-2 px-4 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#374151] hover:bg-[#fafafa] transition-colors">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        Last 30 days
-      </button>
-      <button class="inline-flex items-center gap-2 px-4 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#374151] hover:bg-[#fafafa] transition-colors">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-        </svg>
-        Filter
-      </button>
-    </div>
+    <select bind:value={filterStatus}
+      class="px-4 py-2.5 text-sm border border-[#e5e7eb] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488] text-[#374151]">
+      <option value="all">All Status</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="pending">Pending</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
   </div>
 
-  <!-- Table -->
+  {#if data.canDelete}
+    <div class="flex flex-wrap items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white p-3">
+      <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
+        <input type="checkbox" checked={allFilteredSelected} onchange={(event) => toggleSelectAllFiltered((event.target as HTMLInputElement).checked)} />
+        Select filtered ({filtered.length})
+      </label>
+      <button type="button" onclick={selectAllRecords}
+        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+        Select all reservations ({data.reservations.length})
+      </button>
+      <button type="button" onclick={clearSelection}
+        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb] transition-colors">
+        Clear
+      </button>
+
+      <form method="POST" action="?/deleteSelectedReservations" onsubmit={confirmBulkDelete}>
+        {#each selectedReservationIds as reservationId}
+          <input type="hidden" name="reservationIds" value={reservationId} />
+        {/each}
+        <button
+          type="submit"
+          formaction="?/previewSelectedReservations"
+          class="mr-2 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={selectedReservationIds.length === 0}
+        >
+          Dry run ({selectedReservationIds.length})
+        </button>
+        <button
+          type="submit"
+          disabled={selectedReservationIds.length === 0}
+          class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Delete selected ({selectedReservationIds.length})
+        </button>
+      </form>
+    </div>
+  {/if}
+
   <div class="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="hidden sm:block overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="bg-white border-b border-[#f3f4f6]">
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Client</th>
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Location</th>
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Date & Time</th>
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Guest(s)</th>
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Cost ($)</th>
-            <th class="text-left px-5 py-4 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Status</th>
+          <tr class="bg-[#fafafa] border-b border-[#f0f0f0]">
+            {#if data.canDelete}
+              <th class="text-left px-4 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Select</th>
+            {/if}
+            <th class="text-left px-5 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Guest</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Venue / Org</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Date</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Amount</th>
+            <th class="text-center px-4 py-3 text-xs font-semibold text-[#9ca3af] uppercase tracking-wide">Status</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-[#f9fafb]">
-          {#each filtered as res (res.id)}
+          {#each filtered as res}
             <tr class="hover:bg-[#fafafa] transition-colors">
+              {#if data.canDelete}
+                <td class="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedReservationIds.includes(res.id)}
+                    onchange={(event) => toggleReservationSelection(res.id, (event.target as HTMLInputElement).checked)}
+                  />
+                </td>
+              {/if}
               <td class="px-5 py-4">
-                <div>
-                  <p class="font-semibold text-[#111827]">{res.guest}</p>
-                  <p class="text-xs text-[#9ca3af]">{res.guestEmail}</p>
+                <div class="flex items-center gap-2.5">
+                  <Avatar name={res.guest} size="xs" />
+                  <div>
+                    <p class="font-medium text-[#111827]">{res.guest}</p>
+                    <p class="text-[11px] text-[#9ca3af]">{res.guestEmail}</p>
+                  </div>
                 </div>
               </td>
-              <td class="px-5 py-4">
-                <p class="font-medium text-[#111827]">{res.org}</p>
-                <p class="text-xs text-[#9ca3af]">{res.venue}</p>
+              <td class="px-4 py-4">
+                <p class="text-[#374151]">{res.venue}</p>
+                <p class="text-[11px] text-[#9ca3af]">{res.org}</p>
               </td>
-              <td class="px-5 py-4">
-                <p class="font-medium text-[#111827]">{res.date}</p>
-                <p class="text-xs text-[#9ca3af]">{new Date(res.createdAt).toLocaleDateString()}</p>
-              </td>
-              <td class="px-5 py-4">
-                <p class="font-semibold text-[#111827]">-</p>
-              </td>
-              <td class="px-5 py-4">
-                <p class="font-semibold text-[#111827]">${res.amount.toFixed(2)}</p>
-              </td>
-              <td class="px-5 py-4">
-                <Badge variant={getStatusVariant(res.status)} dot>
-                  {res.status}
+              <td class="px-4 py-4 text-[#6b7280]">{formatDate(res.date)}</td>
+              <td class="px-4 py-4 text-right font-semibold text-[#111827]">{formatCurrency(res.amount)}</td>
+              <td class="px-4 py-4 text-center">
+                <Badge variant={statusMap[res.status as ResStatus]?.variant ?? 'neutral'} dot>
+                  {statusMap[res.status as ResStatus]?.label ?? res.status}
                 </Badge>
               </td>
             </tr>
           {:else}
             <tr>
-              <td colspan="6" class="px-5 py-8 text-center text-sm text-[#9ca3af]">No reservations found.</td>
+              <td colspan={data.canDelete ? 6 : 5} class="px-5 py-8 text-center text-sm text-[#9ca3af]">No reservations found.</td>
             </tr>
           {/each}
         </tbody>
       </table>
     </div>
-  </div>
 
-  <!-- Pagination -->
-  <div class="flex items-center justify-between">
-    <p class="text-sm text-[#9ca3af]">Showing 1-10 of 70</p>
-    <div class="flex items-center gap-2">
-      <button class="p-2 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] transition-colors" disabled>
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button class="w-8 h-8 rounded-lg bg-[#0d9488] text-white text-xs font-semibold">1</button>
-      <button class="w-8 h-8 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] text-xs font-semibold transition-colors">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+    <!-- Mobile cards -->
+    <div class="sm:hidden divide-y divide-[#f9fafb]">
+      {#each filtered as res}
+        <div class="flex items-center gap-3 px-4 py-4">
+          {#if data.canDelete}
+            <input
+              type="checkbox"
+              class="shrink-0"
+              checked={selectedReservationIds.includes(res.id)}
+              onchange={(event) => toggleReservationSelection(res.id, (event.target as HTMLInputElement).checked)}
+            />
+          {/if}
+          <Avatar name={res.guest} size="sm" />
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-[#111827] truncate">{res.guest}</p>
+            <p class="text-xs text-[#9ca3af]">{res.venue} · {formatDate(res.date)}</p>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="text-sm font-semibold text-[#111827]">{formatCurrency(res.amount)}</span>
+            <Badge variant={statusMap[res.status as ResStatus]?.variant ?? 'neutral'} size="sm">
+              {statusMap[res.status as ResStatus]?.label ?? res.status}
+            </Badge>
+          </div>
+        </div>
+      {:else}
+        <p class="px-4 py-8 text-center text-sm text-[#9ca3af]">No reservations found.</p>
+      {/each}
     </div>
   </div>
 </div>

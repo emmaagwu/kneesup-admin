@@ -3,13 +3,17 @@ import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { deleteOrganizationsCascade, getAllOrganizations, previewDeleteOrganizationsCascade } from '$lib/server/db';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
   const organizations = await getAllOrganizations();
-  return { organizations };
+  return { organizations, canDelete: locals.user?.role === 'developer' };
 };
 
 export const actions: Actions = {
-  previewSelectedOrgs: async ({ request }) => {
+  previewSelectedOrgs: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can preview deletion impact.' });
+    }
+
     const formData = await request.formData();
     const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
     if (orgIds.length === 0) {
@@ -33,7 +37,11 @@ export const actions: Actions = {
     };
   },
 
-  deleteOneOrg: async ({ request }) => {
+  deleteOneOrg: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete organizations.' });
+    }
+
     const formData = await request.formData();
     const orgId = String(formData.get('orgId') ?? '').trim();
     if (!orgId) {
@@ -51,7 +59,11 @@ export const actions: Actions = {
     };
   },
 
-  deleteSelectedOrgs: async ({ request }) => {
+  deleteSelectedOrgs: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete organizations.' });
+    }
+
     const formData = await request.formData();
     const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
     if (orgIds.length === 0) {

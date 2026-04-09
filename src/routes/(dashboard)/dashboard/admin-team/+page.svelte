@@ -98,12 +98,14 @@
       Manage administrator access and roles.
       <span class="text-[#f59e0b]">Tip: Grant a user admin access by setting <code class="bg-gray-100 px-1 rounded">userRole: "Admin"</code> in Firestore.</span>
     </p>
-    <p class="text-xs text-[#1d4ed8] mt-2">
-      Protected from deletion: {protectedEmails.join(', ')}
-    </p>
+    {#if data.canDelete}
+      <p class="text-xs text-[#1d4ed8] mt-2">
+        Protected from deletion: {protectedEmails.join(', ')}
+      </p>
+    {/if}
   </div>
 
-  {#if data.admins.length > 0}
+  {#if data.admins.length > 0 && data.canDelete}
     <div class="flex flex-wrap items-center gap-2">
       <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
         <input type="checkbox" checked={allSelected} onchange={(event) => toggleSelectAll((event.target as HTMLInputElement).checked)} />
@@ -140,16 +142,18 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each data.admins as admin}
         <div class="bg-white rounded-xl border border-[#e5e7eb] p-5 hover:shadow-sm transition-shadow">
-          <div class="mb-3">
-            <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-              <input
-                type="checkbox"
-                checked={selectedUserIds.includes(admin.id)}
-                onchange={(event) => toggleUser(admin.id, (event.target as HTMLInputElement).checked)}
-              />
-              Select
-            </label>
-          </div>
+          {#if data.canDelete}
+            <div class="mb-3">
+              <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
+                <input
+                  type="checkbox"
+                  checked={selectedUserIds.includes(admin.id)}
+                  onchange={(event) => toggleUser(admin.id, (event.target as HTMLInputElement).checked)}
+                />
+                Select
+              </label>
+            </div>
+          {/if}
           <div class="flex items-start gap-3">
             <Avatar name={admin.name} size="lg" />
             <div class="flex-1 min-w-0">
@@ -174,20 +178,22 @@
                  class="text-[#0d9488] hover:text-[#0f766e] font-medium transition-colors">
                 Manage →
               </a>
-              <form
-                method="POST"
-                action="?/deleteOneUser"
-                onsubmit={(event) => {
-                  if (!confirm('Delete this user account? This cannot be undone.')) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                <input type="hidden" name="userId" value={admin.id} />
-                <button type="submit" class="font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors">
-                  Delete
-                </button>
-              </form>
+              {#if data.canDelete}
+                <form
+                  method="POST"
+                  action="?/deleteOneUser"
+                  onsubmit={(event) => {
+                    if (!confirm('Delete this user account? This cannot be undone.')) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="userId" value={admin.id} />
+                  <button type="submit" class="font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors">
+                    Delete
+                  </button>
+                </form>
+              {/if}
             </div>
           </div>
         </div>

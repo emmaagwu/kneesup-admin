@@ -47,6 +47,14 @@ function normalizeProtectedIds(protectedUserIds?: string | string[]) {
   return uniqueNonEmpty([protectedUserIds]);
 }
 
+function isFirestoreMissingIndexError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+  const message =
+    'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+  return code === '9' || code === 'failed-precondition' || message.includes('FAILED_PRECONDITION');
+}
+
 export async function resolveUserIdsByEmails(emails: string[]) {
   const normalizedEmails = uniqueNonEmpty(emails.map((email) => email.trim().toLowerCase()));
   if (normalizedEmails.length === 0) return [] as string[];
@@ -72,13 +80,13 @@ export async function getUserByUid(uid: string) {
 }
 
 /**
- * Verify that the authenticated Firebase user is an Admin.
+ * Verify that the authenticated Firebase user can access dashboard features.
  *
- * The host portal stores `userRole: "Admin"` on the Firestore user document
- * for platform-level admins (see dborganization.server.js → getOrgsForUser).
+ * The host portal stores `userRole` on the Firestore user document.
+ * This admin dashboard allows `Admin` and `Developer`.
  *
  * Returns the AdminUser shape needed by the admin portal's auth store,
- * or null if the user is not found / not an admin.
+ * or null if the user is not found / not allowed.
  */
 export async function verifyAdminUser(
   uid: string,
@@ -88,17 +96,23 @@ export async function verifyAdminUser(
 ): Promise<AdminUser | null> {
   const userDoc = await getUserByUid(uid);
 
-  // Only users with userRole === "Admin" in Firestore can access the portal
-  if (!userDoc || userDoc['userRole'] !== 'Admin') {
+  // Only users with userRole in ["Admin", "Developer"] can access the portal
+  const userRole = userDoc?.['userRole'];
+  if (!userDoc || (userRole !== 'Admin' && userRole !== 'Developer')) {
     return null;
   }
+
+  const resolvedRole: AdminUser['role'] =
+    userRole === 'Developer'
+      ? 'developer'
+      : ((userDoc['adminRole'] as AdminUser['role']) ?? 'admin');
 
   return {
     uid,
     email,
     displayName: displayName ?? email,
     photoURL: photoURL ?? undefined,
-    role: (userDoc['adminRole'] as AdminUser['role']) ?? 'admin',
+    role: resolvedRole,
     createdAt: userDoc['createdAt']
       ? new Date((userDoc['createdAt'] as number) * 1000).toISOString()
       : new Date().toISOString()
@@ -648,6 +662,209 @@ export async function getAllVenues(): Promise<AdminVenue[]> {
   });
 }
 
+export interface VenueCascadePreviewResult {
+  venueId: string;
+  venueExists: boolean;
+  reservations: number;
+  guests: number;
+  detachedFromOrganization: number;
+}
+
+export interface VenueCascadeDeleteResult {
+  venueId: string;
+  deletedVenue: boolean;
+  deletedReservations: number;
+  deletedGuests: number;
+  detachedFromOrganization: number;
+}
+
+async function collectVenueCascadeTargets(venueId: string) {
+  const venueRef = adminDb.collection('venue').doc(venueId);
+  const venueSnap = await venueRef.get();
+  if (!venueSnap.exists) {
+    return {
+      venueRef,
+      venueExists: false,
+      venueData: null,
+      reservationsSnap: null,
+      guestRefsMap: new Map<string, FirebaseFirestore.DocumentReference>()
+    };
+  }
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const reservationsSnap = await adminDb.collection('reservation').where('venueId', '==', venueId).get();
+  const reservationIds = uniqueNonEmpty(reservationsSnap.docs.map((doc) => doc.id));
+
+  const guestRefsMap = new Map<string, FirebaseFirestore.DocumentReference>();
+  const guestsByVenueSnap = await adminDb.collection('guests').where('venueId', '==', venueId).get();
+  for (const doc of guestsByVenueSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+
+  for (const ids of chunk(reservationIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('reservationId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  return {
+    venueRef,
+    venueExists: true,
+    venueData,
+    reservationsSnap,
+    guestRefsMap
+  };
+}
+
+export async function previewDeleteVenueCascade(venueId: string): Promise<VenueCascadePreviewResult> {
+  const targets = await collectVenueCascadeTargets(venueId);
+  if (!targets.venueExists || !targets.reservationsSnap || !targets.venueData) {
+    return {
+      venueId,
+      venueExists: false,
+      reservations: 0,
+      guests: 0,
+      detachedFromOrganization: 0
+    };
+  }
+
+  const orgId = String(targets.venueData.orgId ?? '');
+  const detachedFromOrganization = orgId ? 1 : 0;
+
+  return {
+    venueId,
+    venueExists: true,
+    reservations: targets.reservationsSnap.size,
+    guests: targets.guestRefsMap.size,
+    detachedFromOrganization
+  };
+}
+
+export async function previewDeleteVenuesCascade(venueIds: string[]) {
+  const targetIds = uniqueNonEmpty(venueIds);
+  const results: VenueCascadePreviewResult[] = [];
+  for (const venueId of targetIds) {
+    results.push(await previewDeleteVenueCascade(venueId));
+  }
+  return results;
+}
+
+export async function deleteVenueCascade(venueId: string): Promise<VenueCascadeDeleteResult> {
+  const targets = await collectVenueCascadeTargets(venueId);
+  if (!targets.venueExists || !targets.reservationsSnap || !targets.venueData) {
+    return {
+      venueId,
+      deletedVenue: false,
+      deletedReservations: 0,
+      deletedGuests: 0,
+      detachedFromOrganization: 0
+    };
+  }
+
+  const orgId = String(targets.venueData.orgId ?? '');
+  let detachedFromOrganization = 0;
+  if (orgId) {
+    const orgRef = adminDb.collection('organization').doc(orgId);
+    const orgSnap = await orgRef.get();
+    if (orgSnap.exists) {
+      await orgRef.update({
+        venues: FieldValue.arrayRemove(venueId)
+      });
+      detachedFromOrganization = 1;
+    }
+  }
+
+  await commitDeleteByRefs(Array.from(targets.guestRefsMap.values()));
+  await commitDeleteByRefs(targets.reservationsSnap.docs.map((doc) => doc.ref));
+  await targets.venueRef.delete();
+
+  return {
+    venueId,
+    deletedVenue: true,
+    deletedReservations: targets.reservationsSnap.size,
+    deletedGuests: targets.guestRefsMap.size,
+    detachedFromOrganization
+  };
+}
+
+export async function deleteVenuesCascade(venueIds: string[]) {
+  const targetIds = uniqueNonEmpty(venueIds);
+  const results: VenueCascadeDeleteResult[] = [];
+  for (const venueId of targetIds) {
+    results.push(await deleteVenueCascade(venueId));
+  }
+  return results;
+}
+
+export interface ReservationCascadePreviewResult {
+  reservationId: string;
+  reservationExists: boolean;
+  guests: number;
+}
+
+export interface ReservationCascadeDeleteResult {
+  reservationId: string;
+  deletedReservation: boolean;
+  deletedGuests: number;
+}
+
+async function collectReservationCascadeTargets(reservationId: string) {
+  const reservationRef = adminDb.collection('reservation').doc(reservationId);
+  const [reservationSnap, guestsSnap] = await Promise.all([
+    reservationRef.get(),
+    adminDb.collection('guests').where('reservationId', '==', reservationId).get()
+  ]);
+
+  return {
+    reservationRef,
+    reservationExists: reservationSnap.exists,
+    guestRefs: guestsSnap.docs.map((doc) => doc.ref)
+  };
+}
+
+export async function previewDeleteReservationCascade(reservationId: string): Promise<ReservationCascadePreviewResult> {
+  const targets = await collectReservationCascadeTargets(reservationId);
+  return {
+    reservationId,
+    reservationExists: targets.reservationExists,
+    guests: targets.guestRefs.length
+  };
+}
+
+export async function previewDeleteReservationsCascade(reservationIds: string[]) {
+  const targetIds = uniqueNonEmpty(reservationIds);
+  const results: ReservationCascadePreviewResult[] = [];
+  for (const reservationId of targetIds) {
+    results.push(await previewDeleteReservationCascade(reservationId));
+  }
+  return results;
+}
+
+export async function deleteReservationCascade(reservationId: string): Promise<ReservationCascadeDeleteResult> {
+  const targets = await collectReservationCascadeTargets(reservationId);
+  if (!targets.reservationExists) {
+    return {
+      reservationId,
+      deletedReservation: false,
+      deletedGuests: 0
+    };
+  }
+
+  await commitDeleteByRefs(targets.guestRefs);
+  await targets.reservationRef.delete();
+  return {
+    reservationId,
+    deletedReservation: true,
+    deletedGuests: targets.guestRefs.length
+  };
+}
+
+export async function deleteReservationsCascade(reservationIds: string[]) {
+  const targetIds = uniqueNonEmpty(reservationIds);
+  const results: ReservationCascadeDeleteResult[] = [];
+  for (const reservationId of targetIds) {
+    results.push(await deleteReservationCascade(reservationId));
+  }
+  return results;
+}
+
 // ─── Revenue Records ──────────────────────────────────────────────────────────
 
 export interface AdminRevenueRecord {
@@ -667,13 +884,30 @@ export interface AdminRevenueRecord {
 const PLATFORM_FEE_PCT = 0.1;
 
 export async function getRevenueRecords(): Promise<AdminRevenueRecord[]> {
-  const snap = await adminDb
-    .collection('reservation')
-    .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
-    .orderBy('recordCreationTimeStamp', 'desc')
-    .get();
+  let snap: FirebaseFirestore.QuerySnapshot;
+  try {
+    snap = await adminDb
+      .collection('reservation')
+      .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
+      .orderBy('recordCreationTimeStamp', 'desc')
+      .get();
+  } catch (error) {
+    if (!isFirestoreMissingIndexError(error)) throw error;
 
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
+    // Fallback path when the composite index is not created yet.
+    snap = await adminDb
+      .collection('reservation')
+      .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
+      .get();
+  }
+
+  const sortedDocs = [...snap.docs].sort((a, b) => {
+    const tsA = Number(a.data()['recordCreationTimeStamp'] ?? 0);
+    const tsB = Number(b.data()['recordCreationTimeStamp'] ?? 0);
+    return tsB - tsA;
+  });
+
+  const orgIds = [...new Set(sortedDocs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
   const orgNames: Record<string, string> = {};
   await Promise.all(
     orgIds.map(async (orgId) => {
@@ -682,7 +916,7 @@ export async function getRevenueRecords(): Promise<AdminRevenueRecord[]> {
     })
   );
 
-  return snap.docs.map((doc) => {
+  return sortedDocs.map((doc) => {
     const d = doc.data();
     const gross = (d['totalCost'] as number) ?? 0;
     const fee = Math.round(gross * PLATFORM_FEE_PCT * 100) / 100;
@@ -713,7 +947,7 @@ export interface AdminMember {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'support';
+  role: 'super_admin' | 'admin' | 'support' | 'developer';
   photoURL?: string;
   /** ⚠️ lastActive: Not stored in Firestore */
   lastActive: string;
@@ -723,7 +957,7 @@ export interface AdminMember {
 }
 
 export async function getAdminTeam(): Promise<AdminMember[]> {
-  const snap = await adminDb.collection('user').where('userRole', '==', 'Admin').get();
+  const snap = await adminDb.collection('user').where('userRole', 'in', ['Admin', 'Developer']).get();
 
   return snap.docs.map((doc) => {
     const d = doc.data();
@@ -731,11 +965,17 @@ export async function getAdminTeam(): Promise<AdminMember[]> {
     const firstName = profile['firstName'] ?? '';
     const lastName = profile['lastName'] ?? '';
     const displayName = [firstName, lastName].filter(Boolean).join(' ') || (d['email'] as string);
+    const userRole = d['userRole'] as string | undefined;
+    const resolvedRole: AdminMember['role'] =
+      userRole === 'Developer'
+        ? 'developer'
+        : ((d['adminRole'] as AdminMember['role']) ?? 'admin');
+
     return {
       id: doc.id,
       name: displayName,
       email: (d['email'] as string) ?? '',
-      role: (d['adminRole'] as AdminMember['role']) ?? 'admin',
+      role: resolvedRole,
       photoURL: (d['photoURL'] as string | undefined) ?? undefined,
       lastActive: new Date().toISOString(), // ⚠️ Not stored
       status: 'active', // ⚠️ Not stored

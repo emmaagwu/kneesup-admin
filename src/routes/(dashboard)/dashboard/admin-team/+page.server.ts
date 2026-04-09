@@ -15,13 +15,17 @@ async function getProtectedUserIds(currentUserId?: string) {
   return [...new Set(ids.filter(Boolean))];
 }
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
   const admins = await getAdminTeam();
-  return { admins };
+  return { admins, canDelete: locals.user?.role === 'developer' };
 };
 
 export const actions: Actions = {
   previewSelectedUsers: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can preview deletion impact.' });
+    }
+
     const formData = await request.formData();
     const userIds = formData.getAll('userIds').map((value) => String(value).trim()).filter(Boolean);
     if (userIds.length === 0) {
@@ -45,6 +49,10 @@ export const actions: Actions = {
   },
 
   deleteOneUser: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete users.' });
+    }
+
     const formData = await request.formData();
     const userId = String(formData.get('userId') ?? '').trim();
     if (!userId) {
@@ -69,6 +77,10 @@ export const actions: Actions = {
   },
 
   deleteSelectedUsers: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete users.' });
+    }
+
     const formData = await request.formData();
     const userIds = formData.getAll('userIds').map((value) => String(value).trim()).filter(Boolean);
     if (userIds.length === 0) {
