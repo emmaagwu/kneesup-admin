@@ -5,7 +5,18 @@
   import { timeAgo, formatDate } from '$utils/helpers';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+    dryRunReport?: {
+      users: number;
+      organizationsToDetach: number;
+      missing: number;
+      skippedProtected: number;
+    };
+  };
+
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   type Role = 'super_admin' | 'admin' | 'support';
   type RoleVariant = 'error' | 'info' | 'neutral';
@@ -16,69 +27,41 @@
     support:     { label: 'Support',     variant: 'neutral' }
   };
 
-  // ── Form state ────────────────────────────────────────────────────
-  let showModal = $state(false);
-  let isSubmitting = $state(false);
-  let serverError = $state('');
-  
-  // Form fields
-  let email = $state('');
-  let firstName = $state('');
-  let lastName = $state('');
-  let role = $state<Role>('admin');
+  const protectedEmails = [
+    'support@kneesupcorp.com',
+    'support@kneesupvenues.com',
+    'chris@kneesupcorp.com'
+  ];
 
-  async function handleCreate() {
-    serverError = '';
-    isSubmitting = true;
+  let selectedUserIds = $state<string[]>([]);
+  const allSelected = $derived(
+    data.admins.length > 0 && data.admins.every((admin) => selectedUserIds.includes(admin.id))
+  );
 
-    try {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('firstName', firstName);
-      formData.append('lastName', lastName);
-      formData.append('role', role);
-
-      const response = await fetch('?/createAdmin', {
-        method: 'POST',
-        body: formData
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || result.type === 'error') {
-        serverError = result.data?.error || 'Failed to create admin';
-        return;
-      }
-
-      // Success
-      showModal = false;
-      email = '';
-      firstName = '';
-      lastName = '';
-      role = 'admin';
-
-      // Reload page to show new admin
-      window.location.reload();
-    } catch (err) {
-      serverError = 'Failed to create admin user';
-      console.error(err);
-    } finally {
-      isSubmitting = false;
+  function toggleUser(userId: string, checked: boolean) {
+    if (checked) {
+      if (!selectedUserIds.includes(userId)) selectedUserIds = [...selectedUserIds, userId];
+      return;
     }
+    selectedUserIds = selectedUserIds.filter((id) => id !== userId);
   }
 
-  function openModal() {
-    showModal = true;
-    serverError = '';
+  function toggleSelectAll(checked: boolean) {
+    if (!checked) {
+      selectedUserIds = [];
+      return;
+    }
+    selectedUserIds = data.admins.map((admin) => admin.id);
   }
 
-  function closeModal() {
-    showModal = false;
-    serverError = '';
-    email = '';
-    firstName = '';
-    lastName = '';
-    role = 'admin';
+  function confirmBulkDelete(event: SubmitEvent) {
+    if (selectedUserIds.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    if (!confirm(`Delete ${selectedUserIds.length} user account(s)? This cannot be undone.`)) {
+      event.preventDefault();
+    }
   }
 </script>
 
@@ -88,17 +71,66 @@
 
 <TopBar
   breadcrumbs={[{ label: 'Home', href: '/dashboard' }, { label: 'Admin Team' }]}
-  actions={[{ label: '+ Add Admin', onclick: openModal, variant: 'primary' }]}
+  actions={[{ label: '+ Add Admin', href: '/dashboard/admin-team/new', variant: 'primary' }]}
 />
 
 <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+
+  {#if form?.successMessage}
+    <div class="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+      {form.successMessage}
+    </div>
+  {/if}
+  {#if form?.errorMessage}
+    <div class="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+      {form.errorMessage}
+    </div>
+  {/if}
+  {#if form?.dryRunReport}
+    <div class="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm text-[#1e3a8a]">
+      Dry run: {form.dryRunReport.users} user(s) would be deleted, with {form.dryRunReport.organizationsToDetach} organization membership link(s) removed.{#if form.dryRunReport.missing} Missing users: {form.dryRunReport.missing}.{/if}{#if form.dryRunReport.skippedProtected} Protected active session users skipped: {form.dryRunReport.skippedProtected}.{/if}
+    </div>
+  {/if}
+
   <div>
     <h1 class="text-xl font-bold text-[#111827]">Admin Team</h1>
     <p class="text-sm text-[#9ca3af] mt-0.5">
       Manage administrator access and roles.
       <span class="text-[#f59e0b]">Tip: Grant a user admin access by setting <code class="bg-gray-100 px-1 rounded">userRole: "Admin"</code> in Firestore.</span>
     </p>
+    <p class="text-xs text-[#1d4ed8] mt-2">
+      Protected from deletion: {protectedEmails.join(', ')}
+    </p>
   </div>
+
+  {#if data.admins.length > 0}
+    <div class="flex flex-wrap items-center gap-2">
+      <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
+        <input type="checkbox" checked={allSelected} onchange={(event) => toggleSelectAll((event.target as HTMLInputElement).checked)} />
+        Select all
+      </label>
+      <form method="POST" action="?/deleteSelectedUsers" onsubmit={confirmBulkDelete}>
+        {#each selectedUserIds as userId}
+          <input type="hidden" name="userIds" value={userId} />
+        {/each}
+        <button
+          type="submit"
+          formaction="?/previewSelectedUsers"
+          class="mr-2 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={selectedUserIds.length === 0}
+        >
+          Dry run ({selectedUserIds.length})
+        </button>
+        <button
+          type="submit"
+          disabled={selectedUserIds.length === 0}
+          class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Delete selected ({selectedUserIds.length})
+        </button>
+      </form>
+    </div>
+  {/if}
 
   {#if data.admins.length === 0}
     <div class="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
@@ -108,6 +140,16 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {#each data.admins as admin}
         <div class="bg-white rounded-xl border border-[#e5e7eb] p-5 hover:shadow-sm transition-shadow">
+          <div class="mb-3">
+            <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
+              <input
+                type="checkbox"
+                checked={selectedUserIds.includes(admin.id)}
+                onchange={(event) => toggleUser(admin.id, (event.target as HTMLInputElement).checked)}
+              />
+              Select
+            </label>
+          </div>
           <div class="flex items-start gap-3">
             <Avatar name={admin.name} size="lg" />
             <div class="flex-1 min-w-0">
@@ -125,113 +167,31 @@
               </div>
             </div>
           </div>
-          <div class="mt-4 pt-4 border-t border-[#f3f4f6] flex items-center justify-between text-xs text-[#9ca3af]">
+          <div class="mt-4 pt-4 border-t border-[#f3f4f6] flex items-center justify-between text-xs text-[#9ca3af] gap-2">
             <span>Joined {formatDate(admin.createdAt)}</span>
-            <a href="/dashboard/admin-team/{admin.id}"
-               class="text-[#0d9488] hover:text-[#0f766e] font-medium transition-colors">
-              Manage →
-            </a>
+            <div class="flex items-center gap-3">
+              <a href="/dashboard/admin-team/{admin.id}"
+                 class="text-[#0d9488] hover:text-[#0f766e] font-medium transition-colors">
+                Manage →
+              </a>
+              <form
+                method="POST"
+                action="?/deleteOneUser"
+                onsubmit={(event) => {
+                  if (!confirm('Delete this user account? This cannot be undone.')) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="userId" value={admin.id} />
+                <button type="submit" class="font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors">
+                  Delete
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       {/each}
     </div>
   {/if}
 </div>
-
-<!-- Add Admin Modal -->
-{#if showModal}
-  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white w-full sm:w-96 sm:rounded-xl rounded-t-xl overflow-hidden shadow-xl">
-      <!-- Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-[#e5e7eb]">
-        <h2 class="text-lg font-bold text-[#111827]">Add Admin User</h2>
-        <button 
-          onclick={closeModal}
-          class="text-[#9ca3af] hover:text-[#6b7280] transition-colors"
-          aria-label="Close"
-        >
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Body -->
-      <div class="px-6 py-5 space-y-4">
-        {#if serverError}
-          <div class="p-3 bg-[#fef2f2] border border-[#fecaca] rounded-lg">
-            <p class="text-sm text-[#991b1b]">{serverError}</p>
-          </div>
-        {/if}
-
-        <!-- Email -->
-        <div>
-          <label class="block text-sm font-medium text-[#374151] mb-1.5">Email Address *</label>
-          <input 
-            type="email" 
-            bind:value={email}
-            placeholder="admin@example.com"
-            class="w-full px-3 py-2 text-sm border border-[#d1d5db] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <!-- First Name -->
-        <div>
-          <label class="block text-sm font-medium text-[#374151] mb-1.5">First Name</label>
-          <input 
-            type="text" 
-            bind:value={firstName}
-            placeholder="John"
-            class="w-full px-3 py-2 text-sm border border-[#d1d5db] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <!-- Last Name -->
-        <div>
-          <label class="block text-sm font-medium text-[#374151] mb-1.5">Last Name</label>
-          <input 
-            type="text" 
-            bind:value={lastName}
-            placeholder="Doe"
-            class="w-full px-3 py-2 text-sm border border-[#d1d5db] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent"
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <!-- Role -->
-        <div>
-          <label class="block text-sm font-medium text-[#374151] mb-1.5">Role *</label>
-          <select 
-            bind:value={role}
-            class="w-full px-3 py-2 text-sm border border-[#d1d5db] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent"
-            disabled={isSubmitting}
-          >
-            <option value="admin">Admin</option>
-            <option value="super_admin">Super Admin</option>
-            <option value="support">Support</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="flex gap-2 px-6 py-4 border-t border-[#e5e7eb] bg-[#f9fafb]">
-        <button 
-          onclick={closeModal}
-          class="flex-1 px-4 py-2 text-sm font-medium text-[#374151] border border-[#d1d5db] rounded-lg hover:bg-[#f3f4f6] transition-colors"
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button 
-          onclick={handleCreate}
-          class="flex-1 px-4 py-2 text-sm font-medium bg-[#0d9488] text-white rounded-lg hover:bg-[#0f766e] transition-colors disabled:opacity-50"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Creating...' : 'Create Admin'}
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}

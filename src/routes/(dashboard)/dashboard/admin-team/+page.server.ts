@@ -1,6 +1,19 @@
-import type { PageServerLoad, Actions } from './$types';
-import { getAdminTeam, createAdmin } from '$lib/server/db';
+import type { PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { deleteUserAccounts, getAdminTeam, previewDeleteUserAccounts, resolveUserIdsByEmails } from '$lib/server/db';
+
+const PROTECTED_USER_EMAILS = [
+  'support@kneesupcorp.com',
+  'support@kneesupvenues.com',
+  'chris@kneesupcorp.com'
+];
+
+async function getProtectedUserIds(currentUserId?: string) {
+  const ids = await resolveUserIdsByEmails(PROTECTED_USER_EMAILS);
+  if (currentUserId) ids.push(currentUserId);
+  return [...new Set(ids.filter(Boolean))];
+}
 
 export const load: PageServerLoad = async () => {
   const admins = await getAdminTeam();
@@ -8,38 +21,67 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-  createAdmin: async ({ request }) => {
+  previewSelectedUsers: async ({ request, locals }) => {
     const formData = await request.formData();
-    const email = formData.get('email') as string;
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-    const role = formData.get('role') as string;
-
-    // Validation
-    if (!email || !email.includes('@')) {
-      return fail(400, { error: 'Invalid email address' });
+    const userIds = formData.getAll('userIds').map((value) => String(value).trim()).filter(Boolean);
+    if (userIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one user to preview.' });
     }
 
-    if (!role || !['super_admin', 'admin', 'support'].includes(role)) {
-      return fail(400, { error: 'Invalid role selected' });
-    }
+    const protectedUserIds = await getProtectedUserIds(locals.user?.uid);
+    const { results, skippedProtected } = await previewDeleteUserAccounts(userIds, protectedUserIds);
+    const existing = results.filter((result) => result.userExists);
+    const missing = results.length - existing.length;
 
-    try {
-      const adminId = await createAdmin({
-        email,
-        firstName: firstName || undefined,
-        lastName: lastName || undefined,
-        role: role as 'super_admin' | 'admin' | 'support'
+    return {
+      successMessage: `Dry run complete for ${userIds.length} user(s).`,
+      dryRunReport: {
+        users: existing.length,
+        organizationsToDetach: existing.reduce((sum, result) => sum + result.organizationsToDetach, 0),
+        missing,
+        skippedProtected
+      }
+    };
+  },
+
+  deleteOneUser: async ({ request, locals }) => {
+    const formData = await request.formData();
+    const userId = String(formData.get('userId') ?? '').trim();
+    if (!userId) {
+      return fail(400, { errorMessage: 'User id is required.' });
+    }
+    const protectedUserIds = await getProtectedUserIds(locals.user?.uid);
+
+    const { results, skippedProtected } = await deleteUserAccounts([userId], protectedUserIds);
+    if (skippedProtected > 0) {
+      return fail(403, {
+        errorMessage:
+          'This account is protected and cannot be deleted (support/chris or your active admin session).'
       });
-
-      return {
-        success: true,
-        adminId,
-        message: `Admin user ${email} created successfully`
-      };
-    } catch (err) {
-      console.error('Error creating admin:', err);
-      return fail(500, { error: 'Failed to create admin user' });
     }
+
+    const deleted = results[0]?.deletedUser;
+    if (!deleted) {
+      return fail(404, { errorMessage: 'User not found or already removed.' });
+    }
+
+    return { successMessage: 'User account deleted successfully.' };
+  },
+
+  deleteSelectedUsers: async ({ request, locals }) => {
+    const formData = await request.formData();
+    const userIds = formData.getAll('userIds').map((value) => String(value).trim()).filter(Boolean);
+    if (userIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one user to delete.' });
+    }
+
+    const protectedUserIds = await getProtectedUserIds(locals.user?.uid);
+    const { results, skippedProtected } = await deleteUserAccounts(userIds, protectedUserIds);
+    const deletedUsers = results.filter((result) => result.deletedUser).length;
+    const missingUsers = results.length - deletedUsers;
+
+    return {
+      successMessage: `Deleted ${deletedUsers} user(s).${missingUsers ? ` Skipped ${missingUsers} missing user(s).` : ''}${skippedProtected ? ` Skipped ${skippedProtected} protected active session user.` : ''}`
+    };
   }
 };

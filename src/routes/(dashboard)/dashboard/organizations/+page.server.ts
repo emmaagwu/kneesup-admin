@@ -1,6 +1,7 @@
-import type { PageServerLoad, Actions } from './$types';
-import { getAllOrganizations, createOrganization } from '$lib/server/db';
+import type { PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { deleteOrganizationsCascade, getAllOrganizations, previewDeleteOrganizationsCascade } from '$lib/server/db';
 
 export const load: PageServerLoad = async () => {
   const organizations = await getAllOrganizations();
@@ -8,48 +9,65 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-  createOrg: async ({ request }) => {
+  previewSelectedOrgs: async ({ request }) => {
     const formData = await request.formData();
-    
-    const orgName = formData.get('orgName') as string;
-    const contactName = formData.get('contactName') as string;
-    const contactEmail = formData.get('contactEmail') as string;
-    const contactTitle = formData.get('contactTitle') as string;
-    const logo = formData.get('logo') as string | null; // Base64 string
-
-    // Validation
-    if (!orgName || !orgName.trim()) {
-      return fail(400, { error: 'Organization name is required' });
+    const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
+    if (orgIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one organization to preview.' });
     }
 
-    if (!contactName || !contactName.trim()) {
-      return fail(400, { error: 'Contact name is required' });
+    const results = await previewDeleteOrganizationsCascade(orgIds);
+    const existing = results.filter((result) => result.organizationExists);
+    const missing = results.length - existing.length;
+
+    return {
+      successMessage: `Dry run complete for ${results.length} organization(s).`,
+      dryRunReport: {
+        organizations: existing.length,
+        venues: existing.reduce((sum, result) => sum + result.venues, 0),
+        reservations: existing.reduce((sum, result) => sum + result.reservations, 0),
+        guests: existing.reduce((sum, result) => sum + result.guests, 0),
+        detachedUsers: existing.reduce((sum, result) => sum + result.usersToDetach, 0),
+        missing
+      }
+    };
+  },
+
+  deleteOneOrg: async ({ request }) => {
+    const formData = await request.formData();
+    const orgId = String(formData.get('orgId') ?? '').trim();
+    if (!orgId) {
+      return fail(400, { errorMessage: 'Organization id is required.' });
     }
 
-    if (!contactEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-      return fail(400, { error: 'Valid email is required' });
+    const results = await deleteOrganizationsCascade([orgId]);
+    const result = results[0];
+    if (!result?.deletedOrganization) {
+      return fail(404, { errorMessage: 'Organization not found or already removed.' });
     }
 
-    try {
-      // Create organization in Firestore
-      const orgId = await createOrganization({
-        name: orgName.trim(),
-        contactName: contactName.trim(),
-        contactEmail: contactEmail.trim(),
-        contactTitle: contactTitle?.trim() || undefined,
-        logo: logo || undefined  // Pass base64 string directly
-      });
+    return {
+      successMessage: `Deleted 1 organization with ${result.deletedVenues} venues, ${result.deletedReservations} reservations, and ${result.deletedGuests} guests.`
+    };
+  },
 
-      return {
-        success: true,
-        orgId,
-        message: 'Organization created successfully'
-      };
-    } catch (error) {
-      console.error('Error creating organization:', error);
-      return fail(500, {
-        error: 'Failed to create organization. Please try again.'
-      });
+  deleteSelectedOrgs: async ({ request }) => {
+    const formData = await request.formData();
+    const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
+    if (orgIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one organization to delete.' });
     }
+
+    const results = await deleteOrganizationsCascade(orgIds);
+    const deletedOrgs = results.filter((result) => result.deletedOrganization);
+    const skippedOrgs = results.length - deletedOrgs.length;
+
+    const totalVenues = deletedOrgs.reduce((sum, result) => sum + result.deletedVenues, 0);
+    const totalReservations = deletedOrgs.reduce((sum, result) => sum + result.deletedReservations, 0);
+    const totalGuests = deletedOrgs.reduce((sum, result) => sum + result.deletedGuests, 0);
+
+    return {
+      successMessage: `Deleted ${deletedOrgs.length} organization(s), ${totalVenues} venue(s), ${totalReservations} reservation(s), ${totalGuests} guest record(s).${skippedOrgs ? ` Skipped ${skippedOrgs} missing organization(s).` : ''}`
+    };
   }
 };

@@ -13,9 +13,51 @@
  * CANNOT be integrated at the moment are marked with ⚠️.
  */
 
-import { adminDb, adminAuth } from '$lib/firebase/server';
-import admin from 'firebase-admin';
+import { adminDb } from '$lib/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { AdminUser } from '$lib/types';
+
+const WRITE_BATCH_SIZE = 400;
+
+async function commitDeleteByRefs(refs: FirebaseFirestore.DocumentReference[]) {
+  for (let i = 0; i < refs.length; i += WRITE_BATCH_SIZE) {
+    const batch = adminDb.batch();
+    for (const ref of refs.slice(i, i + WRITE_BATCH_SIZE)) {
+      batch.delete(ref);
+    }
+    await batch.commit();
+  }
+}
+
+function uniqueNonEmpty(ids: string[]) {
+  return [...new Set(ids.filter(Boolean))];
+}
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function normalizeProtectedIds(protectedUserIds?: string | string[]) {
+  if (!protectedUserIds) return [] as string[];
+  if (Array.isArray(protectedUserIds)) return uniqueNonEmpty(protectedUserIds);
+  return uniqueNonEmpty([protectedUserIds]);
+}
+
+export async function resolveUserIdsByEmails(emails: string[]) {
+  const normalizedEmails = uniqueNonEmpty(emails.map((email) => email.trim().toLowerCase()));
+  if (normalizedEmails.length === 0) return [] as string[];
+
+  const ids = new Set<string>();
+  for (const group of chunk(normalizedEmails, 10)) {
+    const snap = await adminDb.collection('user').where('email', 'in', group).get();
+    for (const doc of snap.docs) ids.add(doc.id);
+  }
+  return Array.from(ids);
+}
 
 // ─── User / Auth ──────────────────────────────────────────────────────────────
 
@@ -220,6 +262,274 @@ export interface AdminOrganization {
   createdAt: string;
 }
 
+export interface CreateOrganizationInput {
+  name: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerTitle?: string;
+  phone?: string;
+  logoURL?: string;
+}
+
+export async function createOrganization(input: CreateOrganizationInput): Promise<string> {
+  const name = input.name.trim();
+  const ownerName = input.ownerName.trim();
+  const ownerEmail = input.ownerEmail.trim().toLowerCase();
+  const ownerTitle = input.ownerTitle?.trim() || 'Owner';
+  const phone = input.phone?.trim() || '';
+  const logoURL = input.logoURL?.trim() || '';
+  const ownerUserId = globalThis.crypto.randomUUID();
+
+  const docRef = await adminDb.collection('organization').add({
+    name,
+    email: ownerEmail,
+    ownerName,
+    ownerEmail,
+    ownerTitle,
+    phone,
+    logo: logoURL,
+    logoURL,
+    orgMembersIds: [ownerUserId],
+    orgMembers: [
+      {
+        userId: ownerUserId,
+        userRole: ownerTitle,
+        email: ownerEmail,
+        name: ownerName
+      }
+    ],
+    venues: [],
+    status: 'active'
+  });
+
+  return docRef.id;
+}
+
+export interface OrganizationCascadeDeleteResult {
+  orgId: string;
+  deletedOrganization: boolean;
+  deletedVenues: number;
+  deletedReservations: number;
+  deletedGuests: number;
+  detachedUsers: number;
+}
+
+export interface OrganizationCascadePreviewResult {
+  orgId: string;
+  organizationExists: boolean;
+  venues: number;
+  reservations: number;
+  guests: number;
+  usersToDetach: number;
+}
+
+async function collectOrganizationCascadeTargets(orgId: string) {
+  const organizationRef = adminDb.collection('organization').doc(orgId);
+  const organizationSnap = await organizationRef.get();
+  if (!organizationSnap.exists) {
+    return {
+      organizationRef,
+      organizationExists: false,
+      venuesSnap: null,
+      reservationsSnap: null,
+      usersSnap: null,
+      guestRefsMap: new Map<string, FirebaseFirestore.DocumentReference>()
+    };
+  }
+
+  const [venuesSnap, reservationsSnap, usersSnap, guestsByOrgSnap] = await Promise.all([
+    adminDb.collection('venue').where('orgId', '==', orgId).get(),
+    adminDb.collection('reservation').where('orgId', '==', orgId).get(),
+    adminDb.collection('user').where('orgId', '==', orgId).get(),
+    adminDb.collection('guests').where('orgId', '==', orgId).get()
+  ]);
+
+  const venueIds = uniqueNonEmpty(venuesSnap.docs.map((doc) => doc.id));
+  const reservationIds = uniqueNonEmpty(reservationsSnap.docs.map((doc) => doc.id));
+
+  const guestRefsMap = new Map<string, FirebaseFirestore.DocumentReference>();
+  for (const doc of guestsByOrgSnap.docs) {
+    guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  for (const ids of chunk(venueIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('venueId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  for (const ids of chunk(reservationIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('reservationId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  return {
+    organizationRef,
+    organizationExists: true,
+    venuesSnap,
+    reservationsSnap,
+    usersSnap,
+    guestRefsMap
+  };
+}
+
+export async function previewDeleteOrganizationCascade(orgId: string): Promise<OrganizationCascadePreviewResult> {
+  const targets = await collectOrganizationCascadeTargets(orgId);
+  if (!targets.organizationExists || !targets.venuesSnap || !targets.reservationsSnap || !targets.usersSnap) {
+    return {
+      orgId,
+      organizationExists: false,
+      venues: 0,
+      reservations: 0,
+      guests: 0,
+      usersToDetach: 0
+    };
+  }
+
+  return {
+    orgId,
+    organizationExists: true,
+    venues: targets.venuesSnap.size,
+    reservations: targets.reservationsSnap.size,
+    guests: targets.guestRefsMap.size,
+    usersToDetach: targets.usersSnap.size
+  };
+}
+
+export async function previewDeleteOrganizationsCascade(orgIds: string[]) {
+  const targetIds = uniqueNonEmpty(orgIds);
+  const results: OrganizationCascadePreviewResult[] = [];
+  for (const orgId of targetIds) {
+    results.push(await previewDeleteOrganizationCascade(orgId));
+  }
+  return results;
+}
+
+export async function deleteOrganizationCascade(orgId: string): Promise<OrganizationCascadeDeleteResult> {
+  const targets = await collectOrganizationCascadeTargets(orgId);
+  if (
+    !targets.organizationExists ||
+    !targets.venuesSnap ||
+    !targets.reservationsSnap ||
+    !targets.usersSnap
+  ) {
+    return {
+      orgId,
+      deletedOrganization: false,
+      deletedVenues: 0,
+      deletedReservations: 0,
+      deletedGuests: 0,
+      detachedUsers: 0
+    };
+  }
+
+  for (let i = 0; i < targets.usersSnap.docs.length; i += WRITE_BATCH_SIZE) {
+    const batch = adminDb.batch();
+    for (const userDoc of targets.usersSnap.docs.slice(i, i + WRITE_BATCH_SIZE)) {
+      batch.update(userDoc.ref, { orgId: FieldValue.delete() });
+    }
+    await batch.commit();
+  }
+
+  await commitDeleteByRefs(Array.from(targets.guestRefsMap.values()));
+  await commitDeleteByRefs(targets.reservationsSnap.docs.map((doc) => doc.ref));
+  await commitDeleteByRefs(targets.venuesSnap.docs.map((doc) => doc.ref));
+  await targets.organizationRef.delete();
+
+  return {
+    orgId,
+    deletedOrganization: true,
+    deletedVenues: targets.venuesSnap.size,
+    deletedReservations: targets.reservationsSnap.size,
+    deletedGuests: targets.guestRefsMap.size,
+    detachedUsers: targets.usersSnap.size
+  };
+}
+
+export async function deleteOrganizationsCascade(orgIds: string[]) {
+  const targetIds = uniqueNonEmpty(orgIds);
+  const results: OrganizationCascadeDeleteResult[] = [];
+  for (const orgId of targetIds) {
+    results.push(await deleteOrganizationCascade(orgId));
+  }
+  return results;
+}
+
+export interface DeleteUserResult {
+  userId: string;
+  deletedUser: boolean;
+  detachedFromOrganizations: number;
+}
+
+export interface DeleteUserPreviewResult {
+  userId: string;
+  userExists: boolean;
+  organizationsToDetach: number;
+}
+
+export async function previewDeleteUserAccount(userId: string): Promise<DeleteUserPreviewResult> {
+  const userRef = adminDb.collection('user').doc(userId);
+  const [userSnap, orgsSnap] = await Promise.all([
+    userRef.get(),
+    adminDb.collection('organization').where('orgMembersIds', 'array-contains', userId).get()
+  ]);
+
+  return {
+    userId,
+    userExists: userSnap.exists,
+    organizationsToDetach: orgsSnap.size
+  };
+}
+
+export async function previewDeleteUserAccounts(userIds: string[], protectedUserIds?: string | string[]) {
+  const protectedIdsSet = new Set(normalizeProtectedIds(protectedUserIds));
+  const uniqueInputIds = uniqueNonEmpty(userIds);
+  const targetIds = uniqueInputIds.filter((id) => !protectedIdsSet.has(id));
+  const skippedProtected = uniqueInputIds.filter((id) => protectedIdsSet.has(id)).length;
+
+  const results: DeleteUserPreviewResult[] = [];
+  for (const userId of targetIds) {
+    results.push(await previewDeleteUserAccount(userId));
+  }
+
+  return { results, skippedProtected };
+}
+
+export async function deleteUserAccount(userId: string): Promise<DeleteUserResult> {
+  const userRef = adminDb.collection('user').doc(userId);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    return { userId, deletedUser: false, detachedFromOrganizations: 0 };
+  }
+
+  const orgsSnap = await adminDb.collection('organization').where('orgMembersIds', 'array-contains', userId).get();
+  for (const orgDoc of orgsSnap.docs) {
+    const data = orgDoc.data();
+    const orgMembersIds = ((data['orgMembersIds'] as string[]) ?? []).filter((id) => id !== userId);
+    const orgMembers = ((data['orgMembers'] as Array<Record<string, unknown>>) ?? []).filter(
+      (member) => String(member.userId ?? '') !== userId
+    );
+
+    await orgDoc.ref.update({ orgMembersIds, orgMembers });
+  }
+
+  await userRef.delete();
+  return { userId, deletedUser: true, detachedFromOrganizations: orgsSnap.size };
+}
+
+export async function deleteUserAccounts(userIds: string[], protectedUserIds?: string | string[]) {
+  const protectedIdsSet = new Set(normalizeProtectedIds(protectedUserIds));
+  const uniqueInputIds = uniqueNonEmpty(userIds);
+  const targetIds = uniqueInputIds.filter((id) => !protectedIdsSet.has(id));
+  const skippedProtected = uniqueInputIds.filter((id) => protectedIdsSet.has(id)).length;
+
+  const results: DeleteUserResult[] = [];
+  for (const userId of targetIds) {
+    results.push(await deleteUserAccount(userId));
+  }
+
+  return { results, skippedProtected };
+}
+
 export async function getAllOrganizations(): Promise<AdminOrganization[]> {
   const snap = await adminDb.collection('organization').get();
 
@@ -231,11 +541,11 @@ export async function getAllOrganizations(): Promise<AdminOrganization[]> {
     return {
       id: doc.id,
       name: (d['name'] as string) ?? 'Unnamed Organisation',
-      email: owner?.email ?? '',
+      email: owner?.email ?? (d['email'] as string) ?? '',
       phone: '', // ⚠️ Not available in current schema
-      logoURL: (d['logo'] as string | undefined) ?? undefined,
+      logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
       venueCount: ((d['venues'] as string[]) ?? []).length,
-      status: 'active', // ⚠️ No status field in current schema
+      status: (d['status'] as AdminOrganization['status']) ?? 'active',
       createdAt: new Date().toISOString() // ⚠️ No createdAt on orgs in current schema
     };
   });
@@ -250,11 +560,11 @@ export async function getOrganizationById(id: string): Promise<AdminOrganization
   return {
     id: doc.id,
     name: (d['name'] as string) ?? 'Unnamed Organisation',
-    email: owner?.email ?? '',
+    email: owner?.email ?? (d['email'] as string) ?? '',
     phone: '',
-    logoURL: (d['logo'] as string | undefined) ?? undefined,
+    logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
     venueCount: ((d['venues'] as string[]) ?? []).length,
-    status: 'active',
+    status: (d['status'] as AdminOrganization['status']) ?? 'active',
     createdAt: new Date().toISOString()
   };
 }
@@ -679,119 +989,3 @@ export async function getOrganizationPeopleById(orgId: string): Promise<{
 
   return { owner, team: hydratedTeam };
 }
-
-// ─── Organization Creation ────────────────────────────────────────────────────
-
-/**
- * Create a new organization in Firestore.
- * 
- * @param data Organization creation data
- * @returns The newly created organization's ID
- */
-export async function createOrganization(data: {
-  name: string;
-  contactName: string;
-  contactEmail: string;
-  contactTitle?: string;
-  logo?: string;  // Base64 string, not URL
-}) {
-  // Create the organization document
-  const orgRef = await adminDb.collection('organization').add({
-    name: data.name,
-    logo: data.logo || null,  // Store base64 string directly
-    orgMembers: [
-      {
-        userId: '',  // Will be set when user account is created
-        userRole: 'Owner',
-        email: data.contactEmail
-      }
-    ],
-    orgMembersIds: [],
-    venues: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-
-  return orgRef.id;
-}
-
-// ─── Venue Creation ───────────────────────────────────────────────────────────
-
-/**
- * Create a new venue in Firestore.
- * 
- * @param data Venue creation data
- * @returns The newly created venue's ID
- */
-export async function createVenue(data: {
-  name: string;
-  description?: string;
-  orgId: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  postalCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  image?: string;  // Base64 string, not URL
-}) {
-  // Create the venue document
-  const venueRef = await adminDb.collection('venue').add({
-    name: data.name,
-    description: data.description || '',
-    orgId: data.orgId,
-    address: data.address,
-    city: data.city,
-    state: data.state,
-    country: data.country,
-    postalCode: data.postalCode || '',
-    phoneNumber: data.phoneNumber || '',
-    email: data.email || '',
-    image: data.image || null,  // Store base64 string directly
-    spaces: [],  // Empty spaces array for new venues
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-
-  // Add venue to organization's venues array
-  const orgRef = adminDb.collection('organization').doc(data.orgId);
-  await orgRef.update({
-    venues: admin.firestore.FieldValue.arrayUnion(venueRef.id)
-  });
-
-  return venueRef.id;
-}
-
-// ─── Admin Creation ────────────────────────────────────────────────────────────
-
-/**
- * Create a new admin user in Firestore.
- * 
- * @param data Admin creation data
- * @returns The newly created admin's ID
- */
-export async function createAdmin(data: {
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  role: 'super_admin' | 'admin' | 'support';
-  photoURL?: string;
-}) {
-  // Create the user document with Admin role
-  const userRef = await adminDb.collection('user').add({
-    email: data.email,
-    userRole: 'Admin',
-    adminRole: data.role,
-    profile: {
-      firstName: data.firstName || '',
-      lastName: data.lastName || ''
-    },
-    photoURL: data.photoURL || null,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  });
-
-  return userRef.id;
-}
-
