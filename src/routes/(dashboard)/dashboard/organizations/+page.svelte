@@ -2,6 +2,7 @@
   import TopBar from '$components/layout/TopBar.svelte';
   import Badge from '$components/ui/Badge.svelte';
   import { goto } from '$app/navigation';
+  import { enhance } from '$app/forms';
   import type { PageData } from './$types';
   import type { AdminOrganization } from '$lib/server/db';
 
@@ -49,6 +50,8 @@
   // ── Create org drawer ─────────────────────────────────────────────
   let showDrawer = $state(false);
   let drawerStep = $state<1 | 2>(1);
+  let isSubmitting = $state(false);
+  let serverError = $state('');
 
   // Step 1 fields
   let orgName    = $state('');
@@ -76,6 +79,7 @@
     contactName = ''; contactTitle = ''; contactEmail = '';
     step1Errors = { orgName: '' };
     step2Errors = { contactName: '', contactEmail: '' };
+    serverError = '';
   }
 
   function closeDrawer() { showDrawer = false; }
@@ -115,13 +119,47 @@
     if (drawerStep === 1 && validateStep1()) drawerStep = 2;
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!validateStep2()) return;
-    // TODO: API call
-    closeDrawer();
-    clearTimeout(toastTimer);
-    showToast = true;
-    toastTimer = setTimeout(() => showToast = false, 5000);
+
+    isSubmitting = true;
+    serverError = '';
+
+    // Create FormData for submission
+    const formData = new FormData();
+    formData.append('orgName', orgName);
+    formData.append('contactName', contactName);
+    formData.append('contactEmail', contactEmail);
+    formData.append('contactTitle', contactTitle);
+    if (orgPhoto) {
+      formData.append('photo', orgPhoto);
+    }
+
+    try {
+      const response = await fetch('?/createOrg', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.type === 'success' || result.data?.success) {
+        closeDrawer();
+        clearTimeout(toastTimer);
+        showToast = true;
+        toastTimer = setTimeout(() => showToast = false, 5000);
+        
+        // Reload organizations
+        window.location.reload();
+      } else {
+        serverError = result.data?.error || 'Failed to create organization';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      serverError = 'An error occurred. Please try again.';
+    } finally {
+      isSubmitting = false;
+    }
   }
 </script>
 
@@ -208,6 +246,11 @@
 
     <!-- Drawer body -->
     <div class="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+      {#if serverError}
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
+          <p class="text-sm text-red-700">{serverError}</p>
+        </div>
+      {/if}
 
       {#if drawerStep === 1}
         <!-- ── Step 1: Organization Details ── -->
@@ -346,26 +389,35 @@
     <div class="px-6 py-4 border-t border-[#f0f0f0] flex items-center justify-end gap-4 shrink-0 bg-white">
       <button
         onclick={closeDrawer}
+        disabled={isSubmitting}
         class="text-sm font-semibold text-[#dc2626] underline underline-offset-2
-              hover:text-[#b91c1c] transition-colors"
+              hover:text-[#b91c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Cancel
       </button>
       {#if drawerStep === 1}
         <button
           onclick={handleContinue}
+          disabled={isSubmitting}
           class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold
-                hover:bg-[#243647] transition-colors"
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue
         </button>
       {:else}
         <button
           onclick={handleCreate}
+          disabled={isSubmitting}
           class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold
-                hover:bg-[#243647] transition-colors"
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center gap-2"
         >
-          Create
+          {#if isSubmitting}
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          {/if}
+          {isSubmitting ? 'Creating...' : 'Create'}
         </button>
       {/if}
     </div>

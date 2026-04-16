@@ -9,127 +9,58 @@
   let filterPeriod = $state('30days');
   let filterStatus = $state('all');
 
-  // Dummy data for demonstration
-  const stats = [
+  // Real stats from Firestore data
+  const stats = $derived([
     {
       label: 'All Reservations',
-      value: 85,
+      value: data.reservations.length,
       change: '+12%',
       changeLabel: 'vs last week',
       status: 'positive'
     },
     {
       label: 'Active Reservations',
-      value: 57,
+      value: data.reservations.filter(r => r.status === 'confirmed').length,
       change: '+12%',
       changeLabel: 'vs last week',
       status: 'positive'
     },
     {
       label: 'Completed Reservations',
-      value: 23,
+      value: data.reservations.filter(r => r.status === 'completed').length,
       change: '+12%',
       changeLabel: 'vs last week',
       status: 'positive'
     },
     {
       label: 'Cancelled Reservations',
-      value: 5,
+      value: data.reservations.filter(r => r.status === 'cancelled').length,
       change: '+5%',
       changeLabel: 'vs last week',
       status: 'negative'
     }
-  ];
+  ]);
 
-  const reservations = [
-    {
-      id: '1',
-      client: 'Wade Warren',
-      email: 'wade.warren@example.com',
-      phone: '+38 099 122 90',
-      location: 'Creative Hub',
-      venue: 'Conference Room',
-      date: '27.02.24',
-      time: '9am - 2pm',
-      duration: '5 hours',
-      guests: 17,
-      cost: '$22.67',
-      status: 'Completed'
-    },
-    {
-      id: '2',
-      client: 'Liam Johnson',
-      email: 'liam.johnson@example.com',
-      phone: '+38 099 233 91',
-      location: 'Innovation Station',
-      venue: 'Meeting Room',
-      date: '28.02.24',
-      time: '10am - 3pm',
-      duration: '5 hours',
-      guests: 29,
-      cost: '$116.34',
-      status: 'Active'
-    },
-    {
-      id: '3',
-      client: 'Olivia Smith',
-      email: 'olivia.smith@example.com',
-      phone: '+38 099 344 92',
-      location: 'Design Lab',
-      venue: 'Collaboration Space',
-      date: '01.03.24',
-      time: '11am - 4pm',
-      duration: '5 hours',
-      guests: 60,
-      cost: '$55.12',
-      status: 'Completed'
-    },
-    {
-      id: '4',
-      client: 'Ethan Brown',
-      email: 'ethan.brown@example.com',
-      phone: '+38 099 455 93',
-      location: 'Brainstorm Bay',
-      venue: 'Workshop Area',
-      date: '02.03.24',
-      time: '8am - 1pm',
-      duration: '5 hours',
-      guests: 86,
-      cost: '$78.93',
-      status: 'Active'
-    },
-    {
-      id: '5',
-      client: 'Mia Davis',
-      email: 'mia.davis@example.com',
-      phone: '+38 099 566 94',
-      location: 'Strategy Suite',
-      venue: 'Presentation Room',
-      date: '03.03.24',
-      time: '12pm - 5pm',
-      duration: '5 hours',
-      guests: 83,
-      cost: '$78.93',
-      status: 'Cancelled'
-    }
-  ];
+  const reservations = data.reservations;
 
   const getStatusVariant = (status: string) => {
     const variants: Record<string, 'success' | 'info' | 'error'> = {
-      'Completed': 'success',
-      'Active': 'info',
-      'Cancelled': 'error'
+      'completed': 'success',
+      'confirmed': 'info',
+      'cancelled': 'error',
+      'pending': 'info'
     };
     return variants[status] || 'info';
   };
 
   let filtered = $derived(reservations.filter(r => {
     const matchSearch = search === '' || 
-      r.client.toLowerCase().includes(search.toLowerCase()) ||
-      r.email.toLowerCase().includes(search.toLowerCase()) ||
-      r.location.toLowerCase().includes(search.toLowerCase());
+      r.guest.toLowerCase().includes(search.toLowerCase()) ||
+      r.guestEmail.toLowerCase().includes(search.toLowerCase()) ||
+      r.org.toLowerCase().includes(search.toLowerCase()) ||
+      r.venue.toLowerCase().includes(search.toLowerCase());
     
-    const matchStatus = filterStatus === 'all' || r.status.toLowerCase() === filterStatus;
+    const matchStatus = filterStatus === 'all' || r.status === filterStatus;
     return matchSearch && matchStatus;
   }));
 </script>
@@ -221,25 +152,23 @@
             <tr class="hover:bg-[#fafafa] transition-colors">
               <td class="px-5 py-4">
                 <div>
-                  <p class="font-semibold text-[#111827]">{res.client}</p>
-                  <p class="text-xs text-[#9ca3af]">{res.email}</p>
-                  <p class="text-xs text-[#9ca3af]">{res.phone}</p>
+                  <p class="font-semibold text-[#111827]">{res.guest}</p>
+                  <p class="text-xs text-[#9ca3af]">{res.guestEmail}</p>
                 </div>
               </td>
               <td class="px-5 py-4">
-                <p class="font-medium text-[#111827]">{res.location}</p>
+                <p class="font-medium text-[#111827]">{res.org}</p>
                 <p class="text-xs text-[#9ca3af]">{res.venue}</p>
               </td>
               <td class="px-5 py-4">
                 <p class="font-medium text-[#111827]">{res.date}</p>
-                <p class="text-xs text-[#9ca3af]">{res.time}</p>
-                <p class="text-xs text-[#9ca3af]">{res.duration}</p>
+                <p class="text-xs text-[#9ca3af]">{new Date(res.createdAt).toLocaleDateString()}</p>
               </td>
               <td class="px-5 py-4">
-                <p class="font-semibold text-[#111827]">{res.guests}</p>
+                <p class="font-semibold text-[#111827]">-</p>
               </td>
               <td class="px-5 py-4">
-                <p class="font-semibold text-[#111827]">{res.cost}</p>
+                <p class="font-semibold text-[#111827]">${res.amount.toFixed(2)}</p>
               </td>
               <td class="px-5 py-4">
                 <Badge variant={getStatusVariant(res.status)} dot>

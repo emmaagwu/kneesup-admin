@@ -42,6 +42,8 @@
   // ── Drawer state ──────────────────────────────────────────────────
   let showDrawer  = $state(false);
   let drawerStep  = $state<1 | 2 | 3 | 4>(1);
+  let isSubmitting = $state(false);
+  let serverError = $state('');
 
   // Step 1 — Venue Details
   let venueName        = $state('');
@@ -52,11 +54,14 @@
   let venueCity        = $state('');
   let venueState       = $state('');
   let venueZip         = $state('');
+  let phoneNumber      = $state('');
+  let email            = $state('');
 
   // Step 2 — Photos
   let venuePhotos      = $state<File[]>([]);
   let photoPreviews    = $state<string[]>([]);
   let draggingPhotos   = $state(false);
+  let primaryPhoto     = $state<File | null>(null);
 
   // Step 3 — Operating Hours
   type DayHours = { enabled: boolean; slots: { from: string; to: string }[] };
@@ -108,9 +113,11 @@
     showDrawer = true; drawerStep = 1;
     venueName = ''; venueDescription = ''; venueOrg = ''; venueCountry = '';
     venueAddress = ''; venueCity = ''; venueState = ''; venueZip = '';
-    venuePhotos = []; photoPreviews = [];
+    phoneNumber = ''; email = '';
+    venuePhotos = []; photoPreviews = []; primaryPhoto = null;
     layoutImage = null; layoutPreview = null; brochure = null; brochureName = null; additionalNotes = '';
     step1Errors = { venueName: '', venueOrg: '', venueCountry: '', venueAddress: '', venueCity: '', venueState: '', venueZip: '' };
+    serverError = '';
   }
   function closeDrawer() { showDrawer = false; }
 
@@ -138,11 +145,55 @@
     if (drawerStep < 4) drawerStep = (drawerStep + 1) as 1|2|3|4;
   }
 
-  function handleSubmit() {
-    closeDrawer();
-    clearTimeout(toastTimer);
-    showToast = true;
-    toastTimer = setTimeout(() => showToast = false, 5000);
+  async function handleSubmit() {
+    if (!validateStep1()) return;
+
+    isSubmitting = true;
+    serverError = '';
+
+    // Create FormData for submission
+    const formData = new FormData();
+    formData.append('venueName', venueName);
+    formData.append('venueDescription', venueDescription);
+    formData.append('venueOrg', venueOrg);
+    formData.append('venueCountry', venueCountry);
+    formData.append('venueAddress', venueAddress);
+    formData.append('venueCity', venueCity);
+    formData.append('venueState', venueState);
+    formData.append('venueZip', venueZip);
+    formData.append('phoneNumber', phoneNumber);
+    formData.append('email', email);
+    
+    // Add primary photo if available
+    if (primaryPhoto) {
+      formData.append('photo', primaryPhoto);
+    }
+
+    try {
+      const response = await fetch('?/createVenue', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.type === 'success' || result.data?.success) {
+        closeDrawer();
+        clearTimeout(toastTimer);
+        showToast = true;
+        toastTimer = setTimeout(() => showToast = false, 5000);
+        
+        // Reload venues
+        window.location.reload();
+      } else {
+        serverError = result.data?.error || 'Failed to create venue';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      serverError = 'An error occurred. Please try again.';
+    } finally {
+      isSubmitting = false;
+    }
   }
 
   function handlePhotoFiles(files: FileList | null) {
@@ -153,6 +204,10 @@
       reader.onload = (e) => { photoPreviews = [...photoPreviews, e.target?.result as string]; };
       reader.readAsDataURL(file);
     });
+    // Set first photo as primary if not already set
+    if (!primaryPhoto && files.length > 0) {
+      primaryPhoto = files[0];
+    }
   }
 
   function handleLayoutFile(file: File) {
@@ -238,6 +293,11 @@
 
     <!-- Drawer body -->
     <div class="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+      {#if serverError}
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
+          <p class="text-sm text-red-700">{serverError}</p>
+        </div>
+      {/if}
 
       <!-- ── STEP 1: Venue Details ── -->
       {#if drawerStep === 1}
@@ -582,19 +642,34 @@
 
     <!-- Drawer footer -->
     <div class="px-4 sm:px-6 py-4 border-t border-[#f0f0f0] flex items-center justify-end gap-4 shrink-0 bg-white">
-      <button onclick={closeDrawer}
-        class="text-sm font-semibold text-[#dc2626] underline underline-offset-2 hover:text-[#b91c1c] transition-colors">
+      <button 
+        onclick={closeDrawer}
+        disabled={isSubmitting}
+        class="text-sm font-semibold text-[#dc2626] underline underline-offset-2 
+              hover:text-[#b91c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         Cancel
       </button>
       {#if drawerStep < 4}
-        <button onclick={handleContinue}
-          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold hover:bg-[#243647] transition-colors">
+        <button 
+          onclick={handleContinue}
+          disabled={isSubmitting}
+          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold 
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Continue
         </button>
       {:else}
-        <button onclick={handleSubmit}
-          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold hover:bg-[#243647] transition-colors">
-          Submit
+        <button 
+          onclick={handleSubmit}
+          disabled={isSubmitting}
+          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold 
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center gap-2">
+          {#if isSubmitting}
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          {/if}
+          {isSubmitting ? 'Creating...' : 'Submit'}
         </button>
       {/if}
     </div>

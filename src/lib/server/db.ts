@@ -13,7 +13,8 @@
  * CANNOT be integrated at the moment are marked with ⚠️.
  */
 
-import { adminDb } from '$lib/firebase/server';
+import { adminDb, adminAuth } from '$lib/firebase/server';
+import admin from 'firebase-admin';
 import type { AdminUser } from '$lib/types';
 
 // ─── User / Auth ──────────────────────────────────────────────────────────────
@@ -678,3 +679,119 @@ export async function getOrganizationPeopleById(orgId: string): Promise<{
 
   return { owner, team: hydratedTeam };
 }
+
+// ─── Organization Creation ────────────────────────────────────────────────────
+
+/**
+ * Create a new organization in Firestore.
+ * 
+ * @param data Organization creation data
+ * @returns The newly created organization's ID
+ */
+export async function createOrganization(data: {
+  name: string;
+  contactName: string;
+  contactEmail: string;
+  contactTitle?: string;
+  logoURL?: string;
+}) {
+  // Create the organization document
+  const orgRef = await adminDb.collection('organization').add({
+    name: data.name,
+    logo: data.logoURL || null,
+    orgMembers: [
+      {
+        userId: '',  // Will be set when user account is created
+        userRole: 'Owner',
+        email: data.contactEmail
+      }
+    ],
+    orgMembersIds: [],
+    venues: [],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  return orgRef.id;
+}
+
+// ─── Venue Creation ───────────────────────────────────────────────────────────
+
+/**
+ * Create a new venue in Firestore.
+ * 
+ * @param data Venue creation data
+ * @returns The newly created venue's ID
+ */
+export async function createVenue(data: {
+  name: string;
+  description?: string;
+  orgId: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode?: string;
+  phoneNumber?: string;
+  email?: string;
+  imageURL?: string;
+}) {
+  // Create the venue document
+  const venueRef = await adminDb.collection('venue').add({
+    name: data.name,
+    description: data.description || '',
+    orgId: data.orgId,
+    address: data.address,
+    city: data.city,
+    state: data.state,
+    country: data.country,
+    postalCode: data.postalCode || '',
+    phoneNumber: data.phoneNumber || '',
+    email: data.email || '',
+    image: data.imageURL || null,
+    spaces: [],  // Empty spaces array for new venues
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  // Add venue to organization's venues array
+  const orgRef = adminDb.collection('organization').doc(data.orgId);
+  await orgRef.update({
+    venues: admin.firestore.FieldValue.arrayUnion(venueRef.id)
+  });
+
+  return venueRef.id;
+}
+
+// ─── Admin Creation ────────────────────────────────────────────────────────────
+
+/**
+ * Create a new admin user in Firestore.
+ * 
+ * @param data Admin creation data
+ * @returns The newly created admin's ID
+ */
+export async function createAdmin(data: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: 'super_admin' | 'admin' | 'support';
+  photoURL?: string;
+}) {
+  // Create the user document with Admin role
+  const userRef = await adminDb.collection('user').add({
+    email: data.email,
+    userRole: 'Admin',
+    adminRole: data.role,
+    profile: {
+      firstName: data.firstName || '',
+      lastName: data.lastName || ''
+    },
+    photoURL: data.photoURL || null,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  return userRef.id;
+}
+
