@@ -361,7 +361,7 @@
                      {step1Errors.venueOrg ? 'border-red-400 bg-red-50' : 'border-[#e5e7eb]'}
                      focus:outline-none focus:ring-2 focus:ring-[#0d9488] bg-white text-[#374151]">
               <option value="" disabled selected>Select organization</option>
-              {#each organizations as org}<option value={org}>{org}</option>{/each}
+              {#each organizations as org}<option value={org.id}>{org.name}</option>{/each}
             </select>
             <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>

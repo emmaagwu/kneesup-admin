@@ -10,7 +10,7 @@ export const load: PageServerLoad = async () => {
   
   return { 
     venues,
-    organizations: organizations.map(org => org.name)
+    organizations: organizations.map(org => ({ id: org.id, name: org.name }))
   };
 };
 
