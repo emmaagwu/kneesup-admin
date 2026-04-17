@@ -583,6 +583,232 @@ export async function getOrganizationById(id: string): Promise<AdminOrganization
   };
 }
 
+export interface UpdateOrganizationInput {
+  name: string;
+  ownerUserId?: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerTitle?: string;
+}
+
+export async function updateOrganizationById(id: string, input: UpdateOrganizationInput): Promise<void> {
+  const orgRef = adminDb.collection('organization').doc(id);
+  const orgSnap = await orgRef.get();
+
+  if (!orgSnap.exists) {
+    throw new Error('Organization not found');
+  }
+
+  const orgData = orgSnap.data() as Record<string, unknown>;
+  const members = Array.isArray(orgData['orgMembers']) ? [...(orgData['orgMembers'] as Array<Record<string, unknown>>)] : [];
+  const resolvedOwnerUserId = input.ownerUserId?.trim() || String(members.find((member) => String(member.userRole ?? '').toLowerCase() === 'owner')?.userId ?? '');
+  const ownerMember = {
+    userId: resolvedOwnerUserId || globalThis.crypto.randomUUID(),
+    userRole: input.ownerTitle?.trim() || 'Owner',
+    email: input.ownerEmail.trim().toLowerCase(),
+    name: input.ownerName.trim()
+  };
+
+  const ownerIndex = members.findIndex((member) => String(member.userId ?? '') === ownerMember.userId);
+  if (ownerIndex >= 0) {
+    members[ownerIndex] = ownerMember;
+  } else {
+    members.unshift(ownerMember);
+  }
+
+  const orgMemberIds = uniqueNonEmpty([
+    ...(Array.isArray(orgData['orgMembersIds']) ? (orgData['orgMembersIds'] as string[]) : []),
+    ownerMember.userId
+  ]);
+
+  await orgRef.update({
+    name: input.name.trim(),
+    email: input.ownerEmail.trim().toLowerCase(),
+    ownerName: input.ownerName.trim(),
+    ownerEmail: input.ownerEmail.trim().toLowerCase(),
+    ownerTitle: input.ownerTitle?.trim() || 'Owner',
+    orgMembersIds: orgMemberIds,
+    orgMembers: members
+  });
+
+  if (ownerMember.userId) {
+    await adminDb.collection('user').doc(ownerMember.userId).set(
+      {
+        email: input.ownerEmail.trim().toLowerCase(),
+        profile: {
+          firstName: input.ownerName.trim().split(' ')[0] ?? '',
+          lastName: input.ownerName.trim().split(' ').slice(1).join(' ')
+        }
+      },
+      { merge: true }
+    );
+  }
+}
+
+export interface VenueSpaceRow {
+  id: string;
+  name: string;
+  description: string;
+  maxGuest: number;
+  status: 'active' | 'inactive';
+}
+
+export interface VenueReservationRow {
+  id: string;
+  client: string;
+  email: string;
+  venue: string;
+  space: string;
+  cost: string;
+  dateTime: string;
+  duration: string;
+  status: 'active' | 'inactive';
+}
+
+type VenueDayHours = { enabled: boolean; slots: { from: string; to: string }[] };
+
+const DEFAULT_VENUE_HOURS: Record<string, VenueDayHours> = {
+  Monday: { enabled: false, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Tuesday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }, { from: '10:00 AM', to: '6:00 PM' }] },
+  Wednesday: { enabled: true, slots: [{ from: '10:00 AM', to: '6:00 PM' }] },
+  Thursday: { enabled: false, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Friday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Saturday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Sunday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] }
+};
+
+const DEFAULT_VENUE_GALLERY = [
+  '/images/venue-image1.png',
+  '/images/venue-image2.png',
+  '/images/venue-image3.png',
+  '/images/venue-image4.png',
+  '/images/venue-image5.png',
+  '/images/venue-image6.png',
+  '/images/venue-image7.png',
+  '/images/venue-image8.png'
+];
+
+function toVenueHours(value: unknown): Record<string, VenueDayHours> {
+  if (!value || typeof value !== 'object') return DEFAULT_VENUE_HOURS;
+  const source = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(DEFAULT_VENUE_HOURS).map(([day, fallback]) => {
+      const dayValue = source[day] as Record<string, unknown> | undefined;
+      const slots = Array.isArray(dayValue?.slots)
+        ? (dayValue?.slots as Array<{ from?: string; to?: string }>).map((slot) => ({
+            from: slot.from ?? '6:00 AM',
+            to: slot.to ?? '8:00 AM'
+          }))
+        : fallback.slots;
+      return [
+        day,
+        {
+          enabled: typeof dayValue?.enabled === 'boolean' ? dayValue.enabled : fallback.enabled,
+          slots: slots.length > 0 ? slots : fallback.slots
+        }
+      ];
+    })
+  );
+}
+
+function formatVenueMoney(amount: number) {
+  return `$${Math.round(amount).toLocaleString('en-US')}`;
+}
+
+export async function getVenueById(id: string): Promise<{
+  id: string;
+  name: string;
+  organization: string;
+  address: string;
+  description: string;
+  status: 'active' | 'inactive' | 'blocked';
+  spaceCount: number;
+  reservationCount: number;
+  revenue: string;
+  spaces: VenueSpaceRow[];
+  reservations: VenueReservationRow[];
+  hours: Record<string, VenueDayHours>;
+  gallery: string[];
+} | null> {
+  const [venueSnap, reservationsSnap] = await Promise.all([
+    adminDb.collection('venue').doc(id).get(),
+    adminDb.collection('reservation').where('venueId', '==', id).get()
+  ]);
+
+  if (!venueSnap.exists) return null;
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const orgId = String(venueData['orgId'] ?? '');
+  const orgSnap = orgId ? await adminDb.collection('organization').doc(orgId).get() : null;
+  const organizationName = orgSnap?.exists
+    ? String(orgSnap.data()?.['name'] ?? (orgId || 'Unknown Org'))
+    : (orgId || 'Unknown Org');
+
+  const rawSpaces = Array.isArray(venueData['spaces']) ? (venueData['spaces'] as Array<Record<string, unknown>>) : [];
+  const spaces = rawSpaces.map((space, index) => {
+    const blurbs = Array.isArray(space['blurbs']) ? (space['blurbs'] as string[]) : [];
+    return {
+      id: String(space['id'] ?? `space-${index + 1}`),
+      name: String(space['name'] ?? 'Unnamed Space'),
+      description: blurbs[0] ?? String(space['description'] ?? 'No description available.'),
+      maxGuest: Number(space['maxGuests'] ?? space['capacity'] ?? 0),
+      status: 'active' as const
+    };
+  });
+
+  const reservations = reservationsSnap.docs
+    .map((doc) => {
+      const data = doc.data();
+      const amount = (data['totalCost'] as number) ?? 0;
+      const createdAt = data['recordCreationTimeStamp']
+        ? new Date((data['recordCreationTimeStamp'] as number) * 1000)
+        : new Date();
+
+      const state = String(data['reservationState'] ?? 'NEW');
+      const status: 'active' | 'inactive' = ['DECLINED', 'CANCELLED'].includes(state) ? 'inactive' : 'active';
+
+      return {
+        id: doc.id,
+        client: String(data['laceyName'] ?? '—'),
+        email: String(data['laceyEmail'] ?? '—'),
+        venue: String(data['venue'] ?? '—'),
+        space: String(data['space'] ?? data['venueSpaceName'] ?? '—'),
+        cost: formatVenueMoney(amount),
+        dateTime: formatDateTime(createdAt.toISOString()),
+        duration: String(data['duration'] ?? '—'),
+        createdAt: createdAt.getTime(),
+        status
+      };
+    })
+    .sort((left, right) => right.createdAt - left.createdAt)
+    .map(({ createdAt: _createdAt, ...reservation }) => reservation);
+
+  const grossRevenue = reservationsSnap.docs.reduce((sum, doc) => sum + ((doc.data()['totalCost'] as number) ?? 0), 0);
+  const gallery = Array.isArray(venueData['gallery'])
+    ? (venueData['gallery'] as string[]).filter(Boolean)
+    : Array.isArray(venueData['photos'])
+      ? (venueData['photos'] as Array<{ src?: string }>).map((photo) => photo.src ?? '').filter(Boolean)
+      : [];
+
+  const addressParts = [venueData['address'], venueData['city'], venueData['state'], venueData['zip']].filter(Boolean);
+
+  return {
+    id: venueSnap.id,
+    name: String(venueData['name'] ?? 'Unnamed Venue'),
+    organization: organizationName,
+    address: addressParts.join(', '),
+    description: String(venueData['description'] ?? 'No description available.'),
+    status: (venueData['status'] as 'active' | 'inactive' | 'blocked') ?? 'active',
+    spaceCount: spaces.length,
+    reservationCount: reservations.length,
+    revenue: formatVenueMoney(grossRevenue),
+    spaces,
+    reservations,
+    hours: toVenueHours(venueData['hours'] ?? venueData['operatingHours']),
+    gallery: gallery.length > 0 ? gallery : DEFAULT_VENUE_GALLERY
+  };
+}
+
 /** Top organizations by number of reservations */
 export async function getTopOrganizations(topN = 5) {
   const [orgsSnap, reservationsSnap] = await Promise.all([

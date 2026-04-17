@@ -2,6 +2,9 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import TopBar from '$components/layout/TopBar.svelte';
+  import type { PageData } from './$types';
+
+  let { data }: { data: PageData } = $props();
 
   type VenueStatus = 'active' | 'inactive' | 'blocked';
   type SpaceStatus = 'active' | 'inactive';
@@ -73,7 +76,7 @@
 
   // ── State ─────────────────────────────────────────────────────────
   let id    = $derived($page.params.id);
-  let venue = $derived(venueDb[id] ?? venueDb['8']);
+  let venue = $derived(data.venue ?? venueDb[id] ?? venueDb['8']);
   let activeTab  = $state<Tab>('spaces');
   let showBlockModal = $state(false);
   let activeSpaceMenu = $state<string | null>(null);

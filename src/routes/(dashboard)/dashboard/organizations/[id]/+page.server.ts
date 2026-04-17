@@ -1,11 +1,13 @@
 import type { PageServerLoad } from './$types';
+import type { Actions } from './$types';
 import { error } from '@sveltejs/kit';
 import {
   getOrganizationById,
   getVenuesByOrganizationId,
   getReservationsByOrganizationId,
   getOrganizationActivityById,
-  getOrganizationPeopleById
+  getOrganizationPeopleById,
+  updateOrganizationById
 } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -38,4 +40,40 @@ export const load: PageServerLoad = async ({ params }) => {
     reservationCount,
     revenue
   };
+};
+
+export const actions: Actions = {
+  updateOrganization: async ({ request, params }) => {
+    const formData = await request.formData();
+
+    const name = String(formData.get('name') ?? '').trim();
+    const ownerName = String(formData.get('ownerName') ?? '').trim();
+    const ownerEmail = String(formData.get('ownerEmail') ?? '').trim();
+    const ownerTitle = String(formData.get('ownerTitle') ?? '').trim();
+    const ownerUserId = String(formData.get('ownerUserId') ?? '').trim();
+
+    if (!name) {
+      return { errorMessage: 'Organization name is required.' };
+    }
+
+    if (!ownerName) {
+      return { errorMessage: 'Owner name is required.' };
+    }
+
+    if (!ownerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) {
+      return { errorMessage: 'A valid owner email is required.' };
+    }
+
+    await updateOrganizationById(params.id, {
+      name,
+      ownerUserId,
+      ownerName,
+      ownerEmail,
+      ownerTitle: ownerTitle || 'Owner'
+    });
+
+    return {
+      successMessage: 'Organization updated successfully.'
+    };
+  }
 };

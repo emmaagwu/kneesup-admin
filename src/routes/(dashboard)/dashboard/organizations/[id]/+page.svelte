@@ -3,7 +3,12 @@
   import TopBar from '$components/layout/TopBar.svelte';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+  };
+
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   // ── Types ────────────────────────────────────────────────────────
   type OrgStatus = 'active' | 'inactive' | 'blocked';
@@ -35,7 +40,13 @@
   // ── State ─────────────────────────────────────────────────────────
   let activeTab = $state<Tab>('venues');
   let showBlockModal = $state(false);
+  let showEditModal = $state(false);
   let activeMenu = $state<string | null>(null);
+  let editName = $state(data.organization.name);
+  let editOwnerName = $state(data.owner?.name ?? '');
+  let editOwnerEmail = $state(data.owner?.email ?? data.organization.email ?? '');
+  let editOwnerTitle = $state(data.owner?.role ?? 'Owner');
+  let editOwnerUserId = $state(data.owner?.userId ?? '');
 
   // Build the org object in the exact shape your markup expects
   let org = $derived<OrgDetail>({
@@ -88,6 +99,19 @@
     // TODO: call API
   }
 
+  function openEditModal() {
+    editName = data.organization.name;
+    editOwnerName = data.owner?.name ?? '';
+    editOwnerEmail = data.owner?.email ?? data.organization.email ?? '';
+    editOwnerTitle = data.owner?.role ?? 'Owner';
+    editOwnerUserId = data.owner?.userId ?? '';
+    showEditModal = true;
+  }
+
+  function closeEditModal() {
+    showEditModal = false;
+  }
+
   const tabs: { key: Tab; label: string }[] = [
     { key: 'venues',       label: 'Venues' },
     { key: 'reservations', label: 'Reservations' },
@@ -106,6 +130,70 @@
 <svelte:head>
   <title>{org.name} — KneesUp Admin</title>
 </svelte:head>
+
+{#if form?.successMessage}
+  <div class="px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+      {form.successMessage}
+    </div>
+  </div>
+{/if}
+
+{#if form?.errorMessage}
+  <div class="px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+      {form.errorMessage}
+    </div>
+  </div>
+{/if}
+
+{#if showEditModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions --><div class="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] p-4 flex items-center justify-center" onclick={closeEditModal}>
+    <div class="w-full max-w-[640px] rounded-2xl bg-white shadow-xl border border-[#e5e7eb]" onclick={(event) => event.stopPropagation()}>
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#f3f4f6]">
+        <div>
+          <h3 class="text-lg font-bold text-[#111827]">Edit Organization</h3>
+          <p class="text-sm text-[#9ca3af]">Update the organization and owner details.</p>
+        </div>
+        <button onclick={closeEditModal} class="text-[#9ca3af] hover:text-[#374151] transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form method="POST" action="?/updateOrganization" class="px-5 py-5 space-y-4">
+        <input type="hidden" name="ownerUserId" value={editOwnerUserId} />
+
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="organization-name">Organization name</label>
+          <input id="organization-name" name="name" bind:value={editName} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-name">Owner name</label>
+            <input id="owner-name" name="ownerName" bind:value={editOwnerName} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-title">Owner title</label>
+            <input id="owner-title" name="ownerTitle" bind:value={editOwnerTitle} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-email">Owner email</label>
+          <input id="owner-email" name="ownerEmail" type="email" bind:value={editOwnerEmail} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick={closeEditModal} class="px-4 py-2 rounded-lg border border-[#e5e7eb] text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-[#134e4a] text-white text-sm font-semibold hover:bg-[#0f3f3c] transition-colors">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
 
 <!-- Block confirm modal backdrop -->
 {#if showBlockModal}
@@ -182,7 +270,7 @@
 
       <!-- Right: Edit + Block buttons -->
       <div class="flex items-center gap-2 shrink-0">
-        <button class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
+        <button onclick={openEditModal} class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
                        border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
