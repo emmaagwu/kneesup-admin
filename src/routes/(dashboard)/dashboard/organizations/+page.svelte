@@ -55,7 +55,7 @@
 
   // Step 1 fields
   let orgName    = $state('');
-  let orgPhoto   = $state<File | null>(null);
+  let orgPhoto   = $state<string>(''); // Store as base64 string
   let photoPreview = $state<string | null>(null);
   let dragging   = $state(false);
 
@@ -75,7 +75,7 @@
   function openDrawer() {
     showDrawer = true;
     drawerStep = 1;
-    orgName = ''; orgPhoto = null; photoPreview = null;
+    orgName = ''; orgPhoto = ''; photoPreview = null;
     contactName = ''; contactTitle = ''; contactEmail = '';
     step1Errors = { orgName: '' };
     step2Errors = { contactName: '', contactEmail: '' };
@@ -84,12 +84,39 @@
 
   function closeDrawer() { showDrawer = false; }
 
-  function handleFileSelect(file: File) {
+  // Convert File to JPEG base64 (like kneesup-venues)
+  async function fileToJpegBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Failed to get canvas context')); return; }
+          ctx.drawImage(img, 0, 0);
+          // Convert to JPEG with quality 0.8
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFileSelect(file: File) {
     if (!file) return;
-    orgPhoto = file;
-    const reader = new FileReader();
-    reader.onload = (e) => { photoPreview = e.target?.result as string; };
-    reader.readAsDataURL(file);
+    try {
+      orgPhoto = await fileToJpegBase64(file);
+      photoPreview = orgPhoto;
+    } catch (error) {
+      console.error('Error converting file:', error);
+      serverError = 'Failed to process image';
+    }
   }
 
   function onFileInput(e: Event) {
@@ -132,7 +159,7 @@
     formData.append('contactEmail', contactEmail);
     formData.append('contactTitle', contactTitle);
     if (orgPhoto) {
-      formData.append('photo', orgPhoto);
+      formData.append('logo', orgPhoto); // Send base64 string, not File
     }
 
     try {

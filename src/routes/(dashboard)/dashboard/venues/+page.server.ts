@@ -1,11 +1,17 @@
 import type { PageServerLoad, Actions } from './$types';
-import { getAllVenues, createVenue } from '$lib/server/db';
+import { getAllVenues, createVenue, getAllOrganizations } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
-import { storage } from '$lib/firebase/server';
 
 export const load: PageServerLoad = async () => {
-  const venues = await getAllVenues();
-  return { venues };
+  const [venues, organizations] = await Promise.all([
+    getAllVenues(),
+    getAllOrganizations()
+  ]);
+  
+  return { 
+    venues,
+    organizations: organizations.map(org => org.name)
+  };
 };
 
 export const actions: Actions = {
@@ -22,7 +28,7 @@ export const actions: Actions = {
     const venueZip = formData.get('venueZip') as string;
     const phoneNumber = formData.get('phoneNumber') as string;
     const email = formData.get('email') as string;
-    const venuePhoto = formData.get('photo') as File | null;
+    const photo = formData.get('photo') as string | null; // Base64 string
 
     // Validation
     if (!venueName || !venueName.trim()) {
@@ -50,29 +56,6 @@ export const actions: Actions = {
     }
 
     try {
-      let imageURL: string | undefined;
-
-      // Handle photo upload if provided
-      if (venuePhoto && venuePhoto.size > 0) {
-        const buffer = await venuePhoto.arrayBuffer();
-        const timestamp = Date.now();
-        const fileName = `venue-image-${timestamp}-${venuePhoto.name}`;
-        
-        // Upload to Firebase Storage
-        const bucket = storage.bucket();
-        const file = bucket.file(`venues/${fileName}`);
-        
-        await file.save(Buffer.from(buffer), {
-          metadata: {
-            contentType: venuePhoto.type
-          }
-        });
-
-        // Make file public and get URL
-        await file.makePublic();
-        imageURL = file.publicUrl();
-      }
-
       // Create venue in Firestore
       const venueId = await createVenue({
         name: venueName.trim(),
@@ -85,7 +68,7 @@ export const actions: Actions = {
         postalCode: venueZip?.trim() || undefined,
         phoneNumber: phoneNumber?.trim() || undefined,
         email: email?.trim() || undefined,
-        imageURL
+        image: photo || undefined  // Pass base64 string directly
       });
 
       return {

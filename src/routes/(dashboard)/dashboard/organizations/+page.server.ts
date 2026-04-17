@@ -1,9 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { getAllOrganizations, createOrganization } from '$lib/server/db';
 import { fail } from '@sveltejs/kit';
-import { storage } from '$lib/firebase/server';
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
 
 export const load: PageServerLoad = async () => {
   const organizations = await getAllOrganizations();
@@ -18,7 +15,7 @@ export const actions: Actions = {
     const contactName = formData.get('contactName') as string;
     const contactEmail = formData.get('contactEmail') as string;
     const contactTitle = formData.get('contactTitle') as string;
-    const photoFile = formData.get('photo') as File | null;
+    const logo = formData.get('logo') as string | null; // Base64 string
 
     // Validation
     if (!orgName || !orgName.trim()) {
@@ -34,36 +31,13 @@ export const actions: Actions = {
     }
 
     try {
-      let logoURL: string | undefined;
-
-      // Handle photo upload if provided
-      if (photoFile && photoFile.size > 0) {
-        const buffer = await photoFile.arrayBuffer();
-        const timestamp = Date.now();
-        const fileName = `org-logo-${timestamp}-${photoFile.name}`;
-        
-        // Upload to Firebase Storage
-        const bucket = storage.bucket();
-        const file = bucket.file(`organizations/${fileName}`);
-        
-        await file.save(Buffer.from(buffer), {
-          metadata: {
-            contentType: photoFile.type
-          }
-        });
-
-        // Make file public and get URL
-        await file.makePublic();
-        logoURL = file.publicUrl();
-      }
-
       // Create organization in Firestore
       const orgId = await createOrganization({
         name: orgName.trim(),
         contactName: contactName.trim(),
         contactEmail: contactEmail.trim(),
         contactTitle: contactTitle?.trim() || undefined,
-        logoURL
+        logo: logo || undefined  // Pass base64 string directly
       });
 
       return {

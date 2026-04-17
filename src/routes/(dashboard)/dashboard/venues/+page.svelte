@@ -58,10 +58,33 @@
   let email            = $state('');
 
   // Step 2 — Photos
-  let venuePhotos      = $state<File[]>([]);
+  let primaryPhoto     = $state<string>(''); // Store as base64 string
   let photoPreviews    = $state<string[]>([]);
   let draggingPhotos   = $state(false);
-  let primaryPhoto     = $state<File | null>(null);
+
+  // Convert File to JPEG base64 (like kneesup-venues)
+  async function fileToJpegBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Failed to get canvas context')); return; }
+          ctx.drawImage(img, 0, 0);
+          // Convert to JPEG with quality 0.8
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   // Step 3 — Operating Hours
   type DayHours = { enabled: boolean; slots: { from: string; to: string }[] };
@@ -164,7 +187,7 @@
     formData.append('phoneNumber', phoneNumber);
     formData.append('email', email);
     
-    // Add primary photo if available
+    // Add primary photo if available (as base64)
     if (primaryPhoto) {
       formData.append('photo', primaryPhoto);
     }
@@ -196,17 +219,19 @@
     }
   }
 
-  function handlePhotoFiles(files: FileList | null) {
+  async function handlePhotoFiles(files: FileList | null) {
     if (!files) return;
-    Array.from(files).forEach(file => {
-      venuePhotos = [...venuePhotos, file];
-      const reader = new FileReader();
-      reader.onload = (e) => { photoPreviews = [...photoPreviews, e.target?.result as string]; };
-      reader.readAsDataURL(file);
-    });
-    // Set first photo as primary if not already set
-    if (!primaryPhoto && files.length > 0) {
-      primaryPhoto = files[0];
+    
+    // Only handle first file as primary photo (base64)
+    const file = files[0];
+    if (file) {
+      try {
+        primaryPhoto = await fileToJpegBase64(file);
+        photoPreviews = [primaryPhoto];
+      } catch (error) {
+        console.error('Error converting photo:', error);
+        serverError = 'Failed to process image';
+      }
     }
   }
 
@@ -221,7 +246,7 @@
     brochure = file; brochureName = file.name;
   }
 
-  const organizations = $derived([...new Set((data.venues as AdminVenue[]).map(v => v.orgName))]);
+  const organizations = $derived(data.organizations ?? []);
   const countries = ['United States', 'United Kingdom', 'Nigeria', 'Canada', 'Australia'];
   const usStates = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
 </script>

@@ -693,12 +693,12 @@ export async function createOrganization(data: {
   contactName: string;
   contactEmail: string;
   contactTitle?: string;
-  logoURL?: string;
+  logo?: string;  // Base64 string, not URL
 }) {
   // Create the organization document
   const orgRef = await adminDb.collection('organization').add({
     name: data.name,
-    logo: data.logoURL || null,
+    logo: data.logo || null,  // Store base64 string directly
     orgMembers: [
       {
         userId: '',  // Will be set when user account is created
@@ -734,7 +734,7 @@ export async function createVenue(data: {
   postalCode?: string;
   phoneNumber?: string;
   email?: string;
-  imageURL?: string;
+  image?: string;  // Base64 string, not URL
 }) {
   // Create the venue document
   const venueRef = await adminDb.collection('venue').add({
@@ -748,7 +748,7 @@ export async function createVenue(data: {
     postalCode: data.postalCode || '',
     phoneNumber: data.phoneNumber || '',
     email: data.email || '',
-    image: data.imageURL || null,
+    image: data.image || null,  // Store base64 string directly
     spaces: [],  // Empty spaces array for new venues
     createdAt: new Date(),
     updatedAt: new Date()
