@@ -379,6 +379,57 @@ export async function createVenue(input: CreateVenueInput): Promise<string> {
   return venueRef.id;
 }
 
+export interface UpdateVenueInput {
+  name: string;
+  description?: string;
+  orgId: string;
+  country: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  status?: 'active' | 'inactive' | 'blocked';
+}
+
+export async function updateVenueById(id: string, input: UpdateVenueInput): Promise<void> {
+  const venueRef = adminDb.collection('venue').doc(id);
+  const venueSnap = await venueRef.get();
+
+  if (!venueSnap.exists) {
+    throw new Error('Venue not found');
+  }
+
+  const existing = venueSnap.data() as Record<string, unknown>;
+  const previousOrgId = String(existing['orgId'] ?? '').trim();
+  const nextOrgId = input.orgId.trim();
+
+  await venueRef.update({
+    name: input.name.trim(),
+    description: input.description?.trim() || '',
+    orgId: nextOrgId,
+    country: input.country.trim(),
+    address: input.address.trim(),
+    city: input.city.trim(),
+    state: input.state.trim(),
+    zip: input.zip.trim(),
+    status: input.status ?? (existing['status'] as string) ?? 'active'
+  });
+
+  if (previousOrgId && previousOrgId !== nextOrgId) {
+    await adminDb.collection('organization').doc(previousOrgId).set(
+      { venues: FieldValue.arrayRemove(id) },
+      { merge: true }
+    );
+  }
+
+  if (nextOrgId) {
+    await adminDb.collection('organization').doc(nextOrgId).set(
+      { venues: FieldValue.arrayUnion(id) },
+      { merge: true }
+    );
+  }
+}
+
 export interface OrganizationCascadeDeleteResult {
   orgId: string;
   deletedOrganization: boolean;
@@ -780,6 +831,10 @@ export async function getVenueById(id: string): Promise<{
   name: string;
   organization: string;
   address: string;
+  country: string;
+  city: string;
+  state: string;
+  zip: string;
   description: string;
   status: 'active' | 'inactive' | 'blocked';
   spaceCount: number;
@@ -857,6 +912,10 @@ export async function getVenueById(id: string): Promise<{
     name: String(venueData['name'] ?? 'Unnamed Venue'),
     organization: organizationName,
     address: addressParts.join(', '),
+    country: String(venueData['country'] ?? ''),
+    city: String(venueData['city'] ?? ''),
+    state: String(venueData['state'] ?? ''),
+    zip: String(venueData['zip'] ?? ''),
     description: String(venueData['description'] ?? 'No description available.'),
     status: (venueData['status'] as 'active' | 'inactive' | 'blocked') ?? 'active',
     spaceCount: spaces.length,
