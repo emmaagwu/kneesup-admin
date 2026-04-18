@@ -11,7 +11,12 @@
   type Tab = 'spaces' | 'reservations' | 'operating-hours' | 'documents' | 'gallery';
 
   interface Space {
-    id: string; name: string; description: string; maxGuest: number; status: SpaceStatus; pricingModel: 'Payment per Hour' | 'Payment per Guest' | 'Flat Rental Fee' | 'Contact for Pricing';
+    id: string;
+    name: string;
+    description: string;
+    maxGuest: number;
+    status: SpaceStatus;
+    pricingModel?: 'Payment per Hour' | 'Payment per Guest' | 'Flat Rental Fee' | 'Contact for Pricing';
   }
   interface VenueReservation {
     id: string; client: string; email: string; venue: string; space: string;
@@ -76,7 +81,7 @@
 
   // ── State ─────────────────────────────────────────────────────────
   let id    = $derived($page.params.id);
-  let venue = $derived(data.venue ?? venueDb[id] ?? venueDb['8']);
+  let venue = $derived((data.venue ?? venueDb[id ?? '8'] ?? venueDb['8']) as VenueDetail);
   let activeTab  = $state<Tab>('spaces');
   let showBlockModal = $state(false);
   let activeSpaceMenu = $state<string | null>(null);
@@ -152,6 +157,13 @@
     Saturday:  { enabled: true,  slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
     Sunday:    { enabled: true,  slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
   });
+
+  const spaceTimeOptions = [
+    '12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM',
+    '6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+    '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM',
+    '6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM',
+  ];
 
 
   function addSpaceSlot(day: string) {
@@ -1153,7 +1165,7 @@
                 <td class="px-4 py-4">
                   <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
                               bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]">
-                    {space.pricingModel}
+                    {space.pricingModel ?? 'Contact for Pricing'}
                   </span>
                 </td>
                 <td class="px-4 py-4 text-sm text-[#111827]">{space.maxGuest.toLocaleString()}</td>
@@ -1215,7 +1227,7 @@
                   <span class="text-xs text-[#374151]">{space.maxGuest.toLocaleString()} guests</span>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium
                               bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]">
-                    {space.pricingModel}
+                    {space.pricingModel ?? 'Contact for Pricing'}
                   </span>
                   <span class="text-xs font-semibold px-2 py-0.5 rounded-full {statusBadge[space.status]}">
                     {space.status.charAt(0).toUpperCase() + space.status.slice(1)}

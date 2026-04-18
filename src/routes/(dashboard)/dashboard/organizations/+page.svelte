@@ -241,6 +241,7 @@
     try {
       const response = await fetch('?/createOrg', {
         method: 'POST',
+        headers: { accept: 'application/json' },
         body: formData
       });
 
@@ -397,7 +398,7 @@
             >
               {#if photoPreview}
                 <img src={photoPreview} alt="Preview" class="w-20 h-20 rounded-full object-cover mx-auto mb-3"/>
-                <p class="text-xs text-[#6b7280]">{orgPhoto?.name}</p>
+                <p class="text-xs text-[#6b7280]">Logo selected</p>
               {:else}
                 <!-- Upload icon -->
                 <div class="flex justify-center mb-3">
@@ -582,8 +583,9 @@
   <!-- Page heading + CTA -->
   <div class="flex items-center justify-between gap-4">
     <h1 class="text-xl sm:text-2xl font-bold text-[#111827]">Organizations</h1>
-    <a
-      href="/dashboard/organizations/new"
+    <button
+      type="button"
+      onclick={openDrawer}
       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold
              bg-[#1a2e3b] text-white hover:bg-[#243647] transition-colors shrink-0"
     >
@@ -591,7 +593,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
       </svg>
       New Organization
-    </a>
+    </button>
   </div>
 
   <!-- Summary stat cards -->

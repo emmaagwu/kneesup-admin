@@ -44,7 +44,7 @@
     filtered.length > 0 && filtered.every((reservation) => selectedReservationIds.includes(reservation.id))
   );
 
-  let totalAmount = $derived(filtered.reduce((sum, r) => sum + r.amount, 0));
+  let totalAmount = $derived(filtered.reduce((sum, r) => sum + (Number(r.amount) || 0), 0));
 
   function toggleReservationSelection(reservationId: string, checked: boolean) {
     if (checked) {
@@ -155,7 +155,7 @@
       </button>
 
       <form method="POST" action="?/deleteSelectedReservations" onsubmit={confirmBulkDelete}>
-        {#each selectedReservationIds as reservationId}
+        {#each selectedReservationIds as reservationId (reservationId)}
           <input type="hidden" name="reservationIds" value={reservationId} />
         {/each}
         <button
@@ -193,7 +193,7 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-[#f9fafb]">
-          {#each filtered as res}
+          {#each filtered as res (res.id)}
             <tr class="hover:bg-[#fafafa] transition-colors">
               {#if data.canDelete}
                 <td class="px-4 py-4">
@@ -236,7 +236,7 @@
 
     <!-- Mobile cards -->
     <div class="sm:hidden divide-y divide-[#f9fafb]">
-      {#each filtered as res}
+      {#each filtered as res (res.id)}
         <div class="flex items-center gap-3 px-4 py-4">
           {#if data.canDelete}
             <input

@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
-import { deleteOrganizationsCascade, getAllOrganizations, previewDeleteOrganizationsCascade } from '$lib/server/db';
+import { createOrganization, deleteOrganizationsCascade, getAllOrganizations, previewDeleteOrganizationsCascade } from '$lib/server/db';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const organizations = await getAllOrganizations();
@@ -9,6 +9,45 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+  createOrg: async ({ request, locals }) => {
+    if (!locals.user) {
+      return fail(401, { errorMessage: 'You must be signed in to create organizations.' });
+    }
+
+    const formData = await request.formData();
+    const name = String(formData.get('orgName') ?? '').trim();
+    const ownerName = String(formData.get('contactName') ?? '').trim();
+    const ownerEmail = String(formData.get('contactEmail') ?? '').trim();
+    const ownerTitle = String(formData.get('contactTitle') ?? '').trim();
+    const logoURL = String(formData.get('logo') ?? '').trim();
+
+    const errors: Record<string, string> = {};
+    if (!name) errors.name = 'Organization name is required';
+    if (!ownerName) errors.ownerName = 'Contact name is required';
+    if (!ownerEmail) {
+      errors.ownerEmail = 'Contact email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) {
+      errors.ownerEmail = 'Enter a valid email address';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return fail(400, { errorMessage: Object.values(errors)[0], errors });
+    }
+
+    const organizationId = await createOrganization({
+      name,
+      ownerName,
+      ownerEmail,
+      ownerTitle: ownerTitle || 'Owner',
+      logoURL
+    });
+
+    return {
+      successMessage: 'Organization created successfully.',
+      organizationId
+    };
+  },
+
   previewSelectedOrgs: async ({ request, locals }) => {
     if (locals.user?.role !== 'developer') {
       return fail(403, { errorMessage: 'Only Developer role can preview deletion impact.' });

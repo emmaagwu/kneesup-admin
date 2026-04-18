@@ -319,6 +319,66 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
   return docRef.id;
 }
 
+export interface CreateVenueInput {
+  name: string;
+  description?: string;
+  orgId: string;
+  country: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phoneNumber?: string;
+  email?: string;
+  photoURL?: string;
+}
+
+export async function createVenue(input: CreateVenueInput): Promise<string> {
+  const name = input.name.trim();
+  const orgId = input.orgId.trim();
+  const description = input.description?.trim() || '';
+  const country = input.country.trim();
+  const address = input.address.trim();
+  const city = input.city.trim();
+  const state = input.state.trim();
+  const zip = input.zip.trim();
+  const phoneNumber = input.phoneNumber?.trim() || '';
+  const email = input.email?.trim().toLowerCase() || '';
+  const photoURL = input.photoURL?.trim() || '';
+
+  const venueRef = adminDb.collection('venue').doc();
+  await venueRef.set({
+    name,
+    description,
+    orgId,
+    country,
+    address,
+    city,
+    state,
+    zip,
+    phoneNumber,
+    email,
+    photo: photoURL,
+    photos: photoURL ? [{ src: photoURL }] : [],
+    gallery: photoURL ? [photoURL] : [],
+    spaces: [],
+    hours: {},
+    status: 'active',
+    recordCreationTimeStamp: Math.floor(Date.now() / 1000)
+  });
+
+  if (orgId) {
+    await adminDb.collection('organization').doc(orgId).set(
+      {
+        venues: FieldValue.arrayUnion(venueRef.id)
+      },
+      { merge: true }
+    );
+  }
+
+  return venueRef.id;
+}
+
 export interface OrganizationCascadeDeleteResult {
   orgId: string;
   deletedOrganization: boolean;

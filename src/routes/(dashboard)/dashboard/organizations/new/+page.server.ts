@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { createOrganization } from '$lib/server/db';
 
 export const load: PageServerLoad = async () => {
-  return {};
+  throw redirect(303, '/dashboard/organizations');
 };
 
 type FieldErrors = {

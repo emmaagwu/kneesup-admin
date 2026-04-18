@@ -135,6 +135,7 @@
   // Step 2 — Photos
   let primaryPhoto     = $state<string>(''); // Store as base64 string
   let photoPreviews    = $state<string[]>([]);
+  let venuePhotos      = $state<File[]>([]);
   let draggingPhotos   = $state(false);
 
   // Convert File to JPEG base64 (like kneesup-venues)
@@ -212,7 +213,7 @@
     venueName = ''; venueDescription = ''; venueOrg = ''; venueCountry = '';
     venueAddress = ''; venueCity = ''; venueState = ''; venueZip = '';
     phoneNumber = ''; email = '';
-    venuePhotos = []; photoPreviews = []; primaryPhoto = null;
+    venuePhotos = []; photoPreviews = []; primaryPhoto = '';
     layoutImage = null; layoutPreview = null; brochure = null; brochureName = null; additionalNotes = '';
     step1Errors = { venueName: '', venueOrg: '', venueCountry: '', venueAddress: '', venueCity: '', venueState: '', venueZip: '' };
     serverError = '';
@@ -270,6 +271,7 @@
     try {
       const response = await fetch('?/createVenue', {
         method: 'POST',
+        headers: { accept: 'application/json' },
         body: formData
       });
 
@@ -301,6 +303,7 @@
     const file = files[0];
     if (file) {
       try {
+        venuePhotos = [...venuePhotos, file];
         primaryPhoto = await fileToJpegBase64(file);
         photoPreviews = [primaryPhoto];
       } catch (error) {
