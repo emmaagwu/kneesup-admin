@@ -430,6 +430,73 @@ export async function updateVenueById(id: string, input: UpdateVenueInput): Prom
   }
 }
 
+export interface CreateSpaceInput {
+  venueId: string;
+  name: string;
+  description: string;
+  maxGuests: number;
+  pricingModel: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  whatsIncluded?: string;
+  minBookingHours?: string;
+  rules?: string[];
+  amenities?: string[];
+  additionalFees?: Array<{ name: string; type: string; amount: string }>;
+  operatingHours?: Record<string, { enabled: boolean; slots: Array<{ from: string; to: string }> }>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+}
+
+export async function createSpace(input: CreateSpaceInput): Promise<string> {
+  const spaceRef = adminDb.collection('venue').doc(input.venueId).collection('spaces').doc();
+  
+  const spaceData: Record<string, unknown> = {
+    name: input.name.trim(),
+    description: input.description.trim(),
+    maxGuests: input.maxGuests,
+    pricingModel: input.pricingModel,
+    status: 'active',
+    rules: input.rules || [],
+    amenities: input.amenities || [],
+    operatingHours: input.operatingHours || {},
+    notes: input.notes?.trim() || '',
+    recordCreationTimeStamp: Math.floor(Date.now() / 1000)
+  };
+
+  if (input.pricingModel === 'hour') {
+    spaceData.hourlyRate = input.hourlyRate;
+    spaceData.whatsIncluded = input.whatsIncluded;
+    spaceData.minBookingHours = input.minBookingHours;
+  }
+
+  if (input.additionalFees) {
+    spaceData.additionalFees = input.additionalFees.filter(fee => fee.name.trim());
+  }
+
+  if (input.layoutImage) {
+    spaceData.layoutImage = input.layoutImage;
+  }
+
+  if (input.brochure) {
+    spaceData.brochure = input.brochure;
+  }
+
+  await spaceRef.set(spaceData);
+
+  // Update parent venue's spaces count
+  const venueRef = adminDb.collection('venue').doc(input.venueId);
+  await venueRef.set(
+    { 
+      spaces: FieldValue.arrayUnion(spaceRef.id),
+      spaceCount: FieldValue.increment(1)
+    },
+    { merge: true }
+  );
+
+  return spaceRef.id;
+}
+
 export interface OrganizationCascadeDeleteResult {
   orgId: string;
   deletedOrganization: boolean;

@@ -127,7 +127,16 @@
 
   function closeEditModal() {
     showEditModal = false;
+    if ($page.url.searchParams.get('edit') === 'true') {
+      goto($page.url.pathname, { replaceState: true, noScroll: true });
+    }
   }
+
+  $effect(() => {
+    if ($page.url.searchParams.get('edit') === 'true' && !showEditModal) {
+      openEditModal();
+    }
+  });
 
   const statusBadge: Record<string, string> = {
     active:   'text-[#16a34a] bg-[#f0fdf4]',
@@ -278,10 +287,37 @@
   }
 
   function handleSpaceSubmit() {
-    closeSpaceDrawer();
-    clearTimeout(spaceToastTimer);
-    showSpaceToast = true;
-    spaceToastTimer = setTimeout(() => showSpaceToast = false, 5000);
+    const formData = new FormData();
+    formData.append('name', spaceName);
+    formData.append('description', spaceDescription);
+    formData.append('maxGuests', spaceMaxGuests);
+    formData.append('pricingModel', pricingModel);
+    if (pricingModel === 'hour') {
+      formData.append('hourlyRate', hourlyRate);
+      formData.append('whatsIncluded', whatsIncluded);
+      formData.append('minBookingHours', minBookingHours);
+    }
+    formData.append('rules', spaceRules.filter(r => r.trim()).join('|'));
+    formData.append('amenities', selectedAmenities.join('|'));
+    formData.append('notes', spaceNotes);
+
+    fetch(`?/createSpace`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(async (res) => {
+      const response = await res.json();
+      closeSpaceDrawer();
+      clearTimeout(spaceToastTimer);
+      showSpaceToast = true;
+      spaceToastTimer = setTimeout(() => showSpaceToast = false, 5000);
+      if (!res.ok && response.errorMessage) {
+        console.error('Space creation failed:', response.errorMessage);
+      }
+    })
+    .catch((err) => {
+      console.error('Space submission error:', err);
+    });
   }
 
   function handleSpacePhotoFiles(files: FileList | null) {

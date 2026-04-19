@@ -44,6 +44,7 @@
   let sortBy = $state<'name' | 'email' | 'venues' | 'status'>('name');
   let sortDir = $state<'asc' | 'desc'>('asc');
   const perPage = 10;
+  let canDelete = $derived(Boolean((data as PageData & { canDelete?: boolean }).canDelete));
 
   let filtered  = $derived(data.organizations.filter((o: AdminOrganization) =>
     o.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -654,47 +655,49 @@
             <option value="desc">Desc</option>
           </select>
         </label>
-        <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
-          <input
-            type="checkbox"
-            checked={allVisibleSelected}
-            onchange={(event) => toggleSelectAllVisible((event.target as HTMLInputElement).checked)}
-          />
-          Select page ({paginated.length})
-        </label>
-        <button type="button" onclick={selectAllFilteredResults} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
-          Select filtered ({filtered.length})
-        </button>
-        <button type="button" onclick={selectAllDatabaseResults} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
-          Select all records ({data.organizations.length})
-        </button>
-        <button type="button" onclick={clearSelection} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
-          Clear
-        </button>
-        <form method="POST" action="?/previewSelectedOrgs">
-          {#each selectedOrgIds as orgId}
-            <input type="hidden" name="organizationIds" value={orgId} />
-          {/each}
-          <button
-            type="submit"
-            disabled={selectedOrgIds.length === 0}
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Dry run ({selectedOrgIds.length})
+        {#if canDelete}
+          <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onchange={(event) => toggleSelectAllVisible((event.target as HTMLInputElement).checked)}
+            />
+            Select page ({paginated.length})
+          </label>
+          <button type="button" onclick={selectAllFilteredResults} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+            Select filtered ({filtered.length})
           </button>
-        </form>
-        <form method="POST" action="?/deleteSelectedOrgs" onsubmit={confirmBulkDelete}>
-          {#each selectedOrgIds as orgId}
-            <input type="hidden" name="organizationIds" value={orgId} />
-          {/each}
-          <button
-            type="submit"
-            disabled={selectedOrgIds.length === 0}
-            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Delete selected ({selectedOrgIds.length})
+          <button type="button" onclick={selectAllDatabaseResults} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+            Select all records ({data.organizations.length})
           </button>
-        </form>
+          <button type="button" onclick={clearSelection} class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+            Clear
+          </button>
+          <form method="POST" action="?/previewSelectedOrgs">
+            {#each selectedOrgIds as orgId}
+              <input type="hidden" name="organizationIds" value={orgId} />
+            {/each}
+            <button
+              type="submit"
+              disabled={selectedOrgIds.length === 0}
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Dry run ({selectedOrgIds.length})
+            </button>
+          </form>
+          <form method="POST" action="?/deleteSelectedOrgs" onsubmit={confirmBulkDelete}>
+            {#each selectedOrgIds as orgId}
+              <input type="hidden" name="organizationIds" value={orgId} />
+            {/each}
+            <button
+              type="submit"
+              disabled={selectedOrgIds.length === 0}
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Delete selected ({selectedOrgIds.length})
+            </button>
+          </form>
+        {/if}
         <button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -715,13 +718,15 @@
       <table class="w-full">
         <thead>
           <tr class="border-b border-[#f0f0f0]">
-            <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280] w-10">
-              <input
-                type="checkbox"
-                checked={allVisibleSelected}
-                onchange={(event) => toggleSelectAllVisible((event.target as HTMLInputElement).checked)}
-              />
-            </th>
+            {#if canDelete}
+              <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280] w-10">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onchange={(event) => toggleSelectAllVisible((event.target as HTMLInputElement).checked)}
+                />
+              </th>
+            {/if}
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-[#6b7280]">Name</th>
             <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">Owner Email</th>
             <th class="text-left px-4 py-3.5 text-xs font-semibold text-[#6b7280]">No. of Venues</th>
@@ -732,13 +737,15 @@
         <tbody class="divide-y divide-[#f9fafb]">
           {#each paginated as org}
             <tr class="hover:bg-[#fafafa] transition-colors group">
-              <td class="px-4 py-4">
-                <input
-                  type="checkbox"
-                  checked={selectedOrgIds.includes(org.id)}
-                  onchange={(event) => toggleOrgSelection(org.id, (event.target as HTMLInputElement).checked)}
-                />
-              </td>
+              {#if canDelete}
+                <td class="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrgIds.includes(org.id)}
+                    onchange={(event) => toggleOrgSelection(org.id, (event.target as HTMLInputElement).checked)}
+                  />
+                </td>
+              {/if}
               <td class="px-5 py-4 whitespace-nowrap">
                 <a href="/dashboard/organizations/{org.id}"
                    class="text-sm font-semibold text-[#111827] hover:text-[#0d9488] transition-colors">
@@ -789,24 +796,26 @@
                       </svg>
                       Block Org
                     </button>
-                    <form
-                      method="POST"
-                      action="?/deleteOneOrg"
-                      onsubmit={(event) => {
-                        if (!confirm('Delete this organization and all related venues/reservations/guests? This cannot be undone.')) {
-                          event.preventDefault();
-                        }
-                      }}
-                    >
-                      <input type="hidden" name="orgId" value={org.id} />
-                      <button type="submit"
-                              class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#b91c1c] hover:bg-[#fef2f2] transition-colors text-left">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"/>
-                        </svg>
-                        Delete Org
-                      </button>
-                    </form>
+                    {#if canDelete}
+                      <form
+                        method="POST"
+                        action="?/deleteOneOrg"
+                        onsubmit={(event) => {
+                          if (!confirm('Delete this organization and all related venues/reservations/guests? This cannot be undone.')) {
+                            event.preventDefault();
+                          }
+                        }}
+                      >
+                        <input type="hidden" name="orgId" value={org.id} />
+                        <button type="submit"
+                                class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#b91c1c] hover:bg-[#fef2f2] transition-colors text-left">
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"/>
+                          </svg>
+                          Delete Org
+                        </button>
+                      </form>
+                    {/if}
                   </div>
                 {/if}
               </td>
@@ -820,16 +829,18 @@
     <div class="sm:hidden divide-y divide-[#f9fafb]">
       {#each paginated as org}
         <div class="px-4 py-4 relative">
-          <div class="mb-2">
-            <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
-              <input
-                type="checkbox"
-                checked={selectedOrgIds.includes(org.id)}
-                onchange={(event) => toggleOrgSelection(org.id, (event.target as HTMLInputElement).checked)}
-              />
-              Select
-            </label>
-          </div>
+          {#if canDelete}
+            <div class="mb-2">
+              <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
+                <input
+                  type="checkbox"
+                  checked={selectedOrgIds.includes(org.id)}
+                  onchange={(event) => toggleOrgSelection(org.id, (event.target as HTMLInputElement).checked)}
+                />
+                Select
+              </label>
+            </div>
+          {/if}
           <a href="/dashboard/organizations/{org.id}" class="block">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
@@ -879,24 +890,26 @@
                   </svg>
                   Block Org
                 </button>
-                <form
-                  method="POST"
-                  action="?/deleteOneOrg"
-                  onsubmit={(event) => {
-                    if (!confirm('Delete this organization and all related venues/reservations/guests? This cannot be undone.')) {
-                      event.preventDefault();
-                    }
-                  }}
-                >
-                  <input type="hidden" name="orgId" value={org.id} />
-                  <button type="submit"
-                          class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#b91c1c] hover:bg-[#fef2f2] transition-colors text-left">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"/>
-                    </svg>
-                    Delete Org
-                  </button>
-                </form>
+                {#if canDelete}
+                  <form
+                    method="POST"
+                    action="?/deleteOneOrg"
+                    onsubmit={(event) => {
+                      if (!confirm('Delete this organization and all related venues/reservations/guests? This cannot be undone.')) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <input type="hidden" name="orgId" value={org.id} />
+                    <button type="submit"
+                            class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#b91c1c] hover:bg-[#fef2f2] transition-colors text-left">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5h6v2m-7 4v6m4-6v6m5 2H7a2 2 0 01-2-2V7h14v10a2 2 0 01-2 2z"/>
+                      </svg>
+                      Delete Org
+                    </button>
+                  </form>
+                {/if}
               </div>
             {/if}
           </div>
