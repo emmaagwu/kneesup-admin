@@ -1,11 +1,21 @@
 import type { PageServerLoad } from './$types';
 import type { Actions } from './$types';
 import { fail } from '@sveltejs/kit';
-import { deleteReservationsCascade, getAllReservations, previewDeleteReservationsCascade } from '$lib/server/db';
+import { deleteReservationsCascade, getReservationsPage, previewDeleteReservationsCascade } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals }) => {
-  const reservations = await getAllReservations();
-  return { reservations, canDelete: locals.user?.role === 'developer' };
+export const load: PageServerLoad = async ({ locals, url }) => {
+  const pageParam = Number(url.searchParams.get('page') ?? '1');
+  const pageSizeParam = Number(url.searchParams.get('pageSize') ?? '25');
+  const result = await getReservationsPage(pageParam, pageSizeParam);
+
+  return {
+    reservations: result.reservations,
+    totalReservations: result.total,
+    page: result.page,
+    pageSize: result.pageSize,
+    totalPages: result.totalPages,
+    canDelete: locals.user?.role === 'developer'
+  };
 };
 
 export const actions: Actions = {

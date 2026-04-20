@@ -180,8 +180,79 @@ const STATE_TO_STATUS: Record<string, AdminReservation['status']> = {
   NEW: 'pending',
   ACCEPTED: 'confirmed',
   DECLINED: 'cancelled',
+  APPROVED_OFFLINE_PAYMENT: 'confirmed',
   COMPLETED: 'completed'
 };
+
+const NUMERIC_STATE_TO_NAME: Record<number, keyof typeof STATE_TO_STATUS> = {
+  0: 'NEW',
+  1: 'ACCEPTED',
+  2: 'DECLINED',
+  3: 'APPROVED_OFFLINE_PAYMENT'
+};
+
+function mapReservationStateToStatus(rawState: unknown): AdminReservation['status'] {
+  if (typeof rawState === 'number') {
+    const stateName = NUMERIC_STATE_TO_NAME[rawState];
+    return stateName ? STATE_TO_STATUS[stateName] : 'pending';
+  }
+
+  if (typeof rawState === 'string') {
+    const normalized = rawState.trim().toUpperCase();
+
+    if (/^\d+$/.test(normalized)) {
+      const asNumber = Number(normalized);
+      const stateName = NUMERIC_STATE_TO_NAME[asNumber];
+      return stateName ? STATE_TO_STATUS[stateName] : 'pending';
+    }
+
+    return STATE_TO_STATUS[normalized] ?? 'pending';
+  }
+
+  return 'pending';
+}
+
+export interface AdminReservationsPage {
+  reservations: AdminReservation[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+async function resolveOrgNames(orgIds: string[]): Promise<Record<string, string>> {
+  const uniqueOrgIds = [...new Set(orgIds.filter(Boolean))];
+  const orgNames: Record<string, string> = {};
+  await Promise.all(
+    uniqueOrgIds.map(async (orgId) => {
+      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
+      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
+    })
+  );
+  return orgNames;
+}
+
+function mapReservationDoc(
+  doc: FirebaseFirestore.QueryDocumentSnapshot,
+  orgNames: Record<string, string>
+): AdminReservation {
+  const d = doc.data();
+  const orgId = (d['orgId'] as string) ?? '';
+  return {
+    id: doc.id,
+    guest: (d['laceyName'] as string) ?? 'Unknown',
+    guestEmail: (d['laceyEmail'] as string) ?? '',
+    venue: (d['venue'] as string) ?? 'Unknown Venue',
+    orgId,
+    org: orgNames[orgId] ?? '',
+    date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
+    amount: (d['totalCost'] as number) ?? 0,
+    status: mapReservationStateToStatus(d['reservationState']),
+    createdAt: d['recordCreationTimeStamp']
+      ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+      : new Date().toISOString()
+  };
+}
 
 export async function getRecentReservations(limit = 10): Promise<AdminReservation[]> {
   const snap = await adminDb
@@ -191,34 +262,8 @@ export async function getRecentReservations(limit = 10): Promise<AdminReservatio
     .get();
 
   // Batch-resolve org names
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
-  const orgNames: Record<string, string> = {};
-
-  await Promise.all(
-    orgIds.map(async (orgId) => {
-      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
-      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
-    })
-  );
-
-  return snap.docs.map((doc) => {
-    const d = doc.data();
-    const state = (d['reservationState'] as string) ?? 'NEW';
-    return {
-      id: doc.id,
-      guest: (d['laceyName'] as string) ?? 'Unknown',
-      guestEmail: (d['laceyEmail'] as string) ?? '',
-      venue: (d['venue'] as string) ?? 'Unknown Venue',
-      orgId: d['orgId'] as string,
-      org: orgNames[d['orgId'] as string] ?? '',
-      date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
-      amount: (d['totalCost'] as number) ?? 0,
-      status: STATE_TO_STATUS[state] ?? 'pending',
-      createdAt: d['recordCreationTimeStamp']
-        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
-        : new Date().toISOString()
-    };
-  });
+  const orgNames = await resolveOrgNames(snap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+  return snap.docs.map((doc) => mapReservationDoc(doc, orgNames));
 }
 
 // ─── All Reservations (with search/filter) ────────────────────────────────────
@@ -229,33 +274,36 @@ export async function getAllReservations(): Promise<AdminReservation[]> {
     .orderBy('recordCreationTimeStamp', 'desc')
     .get();
 
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
-  const orgNames: Record<string, string> = {};
-  await Promise.all(
-    orgIds.map(async (orgId) => {
-      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
-      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
-    })
-  );
+  const orgNames = await resolveOrgNames(snap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+  return snap.docs.map((doc) => mapReservationDoc(doc, orgNames));
+}
 
-  return snap.docs.map((doc) => {
-    const d = doc.data();
-    const state = (d['reservationState'] as string) ?? 'NEW';
-    return {
-      id: doc.id,
-      guest: (d['laceyName'] as string) ?? 'Unknown',
-      guestEmail: (d['laceyEmail'] as string) ?? '',
-      venue: (d['venue'] as string) ?? 'Unknown Venue',
-      orgId: d['orgId'] as string,
-      org: orgNames[d['orgId'] as string] ?? '',
-      date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
-      amount: (d['totalCost'] as number) ?? 0,
-      status: STATE_TO_STATUS[state] ?? 'pending',
-      createdAt: d['recordCreationTimeStamp']
-        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
-        : new Date().toISOString()
-    };
-  });
+export async function getReservationsPage(page = 1, pageSize = 25): Promise<AdminReservationsPage> {
+  const safePageSize = Number.isFinite(pageSize) ? Math.min(Math.max(Math.floor(pageSize), 10), 100) : 25;
+  const safePage = Number.isFinite(page) ? Math.max(Math.floor(page), 1) : 1;
+
+  const totalSnap = await adminDb.collection('reservation').count().get();
+  const total = totalSnap.data().count;
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const pageToLoad = Math.min(safePage, totalPages);
+  const offset = (pageToLoad - 1) * safePageSize;
+
+  const pageSnap = await adminDb
+    .collection('reservation')
+    .orderBy('recordCreationTimeStamp', 'desc')
+    .offset(offset)
+    .limit(safePageSize)
+    .get();
+
+  const orgNames = await resolveOrgNames(pageSnap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+
+  return {
+    reservations: pageSnap.docs.map((doc) => mapReservationDoc(doc, orgNames)),
+    total,
+    page: pageToLoad,
+    pageSize: safePageSize,
+    totalPages
+  };
 }
 
 // ─── Organizations ────────────────────────────────────────────────────────────

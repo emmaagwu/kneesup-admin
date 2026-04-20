@@ -2,6 +2,7 @@
   import TopBar from '$components/layout/TopBar.svelte';
   import Badge from '$components/ui/Badge.svelte';
   import Avatar from '$components/ui/Avatar.svelte';
+  import { resolve } from '$app/paths';
   import { formatCurrency, formatDate } from '$utils/helpers';
   import type { PageData } from './$types';
 
@@ -21,10 +22,10 @@
   type StatusVariant = 'success' | 'warning' | 'info' | 'error';
 
   const statusMap: Record<ResStatus, { label: string; variant: StatusVariant }> = {
-    confirmed: { label: 'Confirmed', variant: 'success' },
+    confirmed: { label: 'Accepted', variant: 'success' },
     pending:   { label: 'Pending',   variant: 'warning' },
     completed: { label: 'Completed', variant: 'info' },
-    cancelled: { label: 'Cancelled', variant: 'error' }
+    cancelled: { label: 'Declined', variant: 'error' }
   };
 
   let search = $state('');
@@ -45,6 +46,12 @@
   );
 
   let totalAmount = $derived(filtered.reduce((sum, r) => sum + (Number(r.amount) || 0), 0));
+  let currentPage = $derived(data.page ?? 1);
+  let totalPages = $derived(data.totalPages ?? 1);
+  let hasPrevPage = $derived(currentPage > 1);
+  let hasNextPage = $derived(currentPage < totalPages);
+  let startRecord = $derived(data.totalReservations === 0 ? 0 : (currentPage - 1) * data.pageSize + 1);
+  let endRecord = $derived(Math.min(currentPage * data.pageSize, data.totalReservations));
 
   function toggleReservationSelection(reservationId: string, checked: boolean) {
     if (checked) {
@@ -116,9 +123,14 @@
       <p class="text-sm text-[#9ca3af] mt-0.5">All bookings across every venue on the platform.</p>
     </div>
     <div class="hidden sm:block text-right">
-      <p class="text-sm text-[#9ca3af]">Total shown</p>
+      <p class="text-sm text-[#9ca3af]">Total shown on page</p>
       <p class="text-lg font-bold text-[#111827]">{formatCurrency(totalAmount)}</p>
     </div>
+  </div>
+
+  <div class="flex items-center justify-between text-xs text-[#6b7280]">
+    <p>Showing {startRecord}-{endRecord} of {data.totalReservations} reservations</p>
+    <p>Page {currentPage} of {totalPages}</p>
   </div>
 
   <div class="flex flex-col sm:flex-row gap-3">
@@ -262,5 +274,24 @@
         <p class="px-4 py-8 text-center text-sm text-[#9ca3af]">No reservations found.</p>
       {/each}
     </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-2">
+    <a
+      href={resolve(`/dashboard/reservations?page=${hasPrevPage ? currentPage - 1 : currentPage}&pageSize=${data.pageSize}`)}
+      aria-disabled={!hasPrevPage}
+      class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] transition-colors
+             {hasPrevPage ? 'text-[#374151] hover:bg-[#f9fafb]' : 'text-[#9ca3af] cursor-not-allowed pointer-events-none bg-[#fafafa]'}"
+    >
+      Previous
+    </a>
+    <a
+      href={resolve(`/dashboard/reservations?page=${hasNextPage ? currentPage + 1 : currentPage}&pageSize=${data.pageSize}`)}
+      aria-disabled={!hasNextPage}
+      class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] transition-colors
+             {hasNextPage ? 'text-[#374151] hover:bg-[#f9fafb]' : 'text-[#9ca3af] cursor-not-allowed pointer-events-none bg-[#fafafa]'}"
+    >
+      Next
+    </a>
   </div>
 </div>
