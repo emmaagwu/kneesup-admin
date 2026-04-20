@@ -926,7 +926,7 @@ export async function getAllOrganizations(): Promise<AdminOrganization[]> {
       logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
       venueCount: ((d['venues'] as string[]) ?? []).length,
       status: (d['status'] as AdminOrganization['status']) ?? 'active',
-      createdAt: new Date().toISOString() // ⚠️ No createdAt on orgs in current schema
+      createdAt: doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
     };
   });
 }
@@ -945,7 +945,7 @@ export async function getOrganizationById(id: string): Promise<AdminOrganization
     logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
     venueCount: ((d['venues'] as string[]) ?? []).length,
     status: (d['status'] as AdminOrganization['status']) ?? 'active',
-    createdAt: new Date().toISOString()
+    createdAt: doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
   };
 }
 
@@ -1289,6 +1289,7 @@ export interface AdminVenue {
   status: 'active' | 'inactive' | 'blocked';
   /** ⚠️ rating: Not stored in Firestore venue document at all */
   rating: number;
+  createdAt: string;
 }
 
 export async function getAllVenues(): Promise<AdminVenue[]> {
@@ -1316,9 +1317,12 @@ export async function getAllVenues(): Promise<AdminVenue[]> {
       country: (d['country'] as string) ?? '',
       spacesCount: ((d['spaces'] as unknown[]) ?? []).length,
       status: 'active', // ⚠️ No status field in current schema
-      rating: 0 // ⚠️ No rating field in current schema
+      rating: 0, // ⚠️ No rating field in current schema
+      createdAt: d['recordCreationTimeStamp']
+        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+        : doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
     };
-  });
+  }).sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
 export interface VenueCascadePreviewResult {
@@ -1654,6 +1658,7 @@ export interface OrgVenueRow {
   name: string;
   address: string;
   spaces: number;
+  createdAt: string;
   /** ⚠️ rating not stored; default 0 */
   rating: number;
   /** ⚠️ venue status not stored; default 'active' */
@@ -1666,12 +1671,16 @@ export async function getVenuesByOrganizationId(orgId: string): Promise<OrgVenue
   return snap.docs.map((doc) => {
     const d = doc.data();
     const addressParts = [d['address'], d['city'], d['state']].filter(Boolean);
+    const createdAt = d['recordCreationTimeStamp']
+      ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+      : new Date().toISOString();
 
     return {
       id: doc.id,
       name: (d['name'] as string) ?? 'Unnamed Venue',
       address: addressParts.join(', '),
       spaces: ((d['spaces'] as unknown[]) ?? []).length,
+      createdAt,
       rating: 0, // ⚠️ not in schema
       status: 'active' // ⚠️ not in schema
     };
@@ -1688,6 +1697,7 @@ export interface OrgReservationRow {
   space: string;
   cost: string;
   dateTime: string;
+  createdAt: string;
   duration: string;
   status: 'active' | 'inactive';
   amountNumber: number;
@@ -1743,6 +1753,7 @@ export async function getReservationsByOrganizationId(orgId: string): Promise<Or
       space,
       cost: formatMoneyUSD(amount),
       dateTime: formatDateTime(createdAt),
+      createdAt: createdAt.toISOString(),
       duration,
       status,
       amountNumber: amount

@@ -41,10 +41,15 @@
   let search     = $state('');
   let activeMenu = $state<string | null>(null);
   let currentPage = $state(1);
-  let sortBy = $state<'name' | 'email' | 'venues' | 'status'>('name');
+  let sortBy = $state<'recent' | 'oldest' | 'name' | 'email' | 'venues' | 'status'>('recent');
   let sortDir = $state<'asc' | 'desc'>('asc');
   const perPage = 10;
   let canDelete = $derived(Boolean((data as PageData & { canDelete?: boolean }).canDelete));
+
+  function getRecencyValue(value: string) {
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
 
   let filtered  = $derived(data.organizations.filter((o: AdminOrganization) =>
     o.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,6 +60,8 @@
     const rows = [...filtered];
     const dir = sortDir === 'asc' ? 1 : -1;
     rows.sort((a, b) => {
+      if (sortBy === 'recent') return getRecencyValue(b.createdAt) - getRecencyValue(a.createdAt);
+      if (sortBy === 'oldest') return getRecencyValue(a.createdAt) - getRecencyValue(b.createdAt);
       if (sortBy === 'venues') return (a.venueCount - b.venueCount) * dir;
       if (sortBy === 'status') return a.status.localeCompare(b.status) * dir;
       if (sortBy === 'email') return a.email.localeCompare(b.email) * dir;
@@ -645,6 +652,8 @@
         <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
           Sort
           <select bind:value={sortBy} class="rounded border border-[#d1d5db] px-2 py-1 text-xs">
+            <option value="recent">Newest first</option>
+            <option value="oldest">Oldest first</option>
             <option value="name">Name</option>
             <option value="email">Owner email</option>
             <option value="venues">Venue count</option>

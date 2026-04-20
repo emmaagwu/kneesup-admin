@@ -19,6 +19,7 @@
   let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   type VenueStatus = 'active' | 'inactive' | 'blocked';
+  type VenueSortBy = 'recent' | 'oldest' | 'name' | 'org' | 'spaces' | 'status';
 
   const summaryStats = $derived([
     { label: 'All Venues', value: data.venues.length,                                              change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
@@ -38,9 +39,14 @@
   let search      = $state('');
   let activeMenu  = $state<string | null>(null);
   let currentPage = $state(1);
-  let sortBy = $state<'name' | 'org' | 'spaces' | 'status'>('name');
+  let sortBy = $state<VenueSortBy>('recent');
   let sortDir = $state<'asc' | 'desc'>('asc');
   const perPage   = 10;
+
+  function getRecencyValue(value: string) {
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
 
   let filtered   = $derived((data.venues as AdminVenue[]).filter((v: AdminVenue) =>
     v.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -52,6 +58,8 @@
     const rows = [...filtered];
     const dir = sortDir === 'asc' ? 1 : -1;
     rows.sort((a, b) => {
+      if (sortBy === 'recent') return getRecencyValue(b.createdAt) - getRecencyValue(a.createdAt);
+      if (sortBy === 'oldest') return getRecencyValue(a.createdAt) - getRecencyValue(b.createdAt);
       if (sortBy === 'spaces') return (a.spacesCount - b.spacesCount) * dir;
       if (sortBy === 'status') return a.status.localeCompare(b.status) * dir;
       if (sortBy === 'org') return a.orgName.localeCompare(b.orgName) * dir;
@@ -883,14 +891,12 @@
         <button
           class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors"
           onclick={() => {
-            if (sortBy === 'name') sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-            else {
-              sortBy = 'name';
-              sortDir = 'asc';
-            }
+            if (sortBy === 'recent') sortBy = 'oldest';
+            else if (sortBy === 'oldest') sortBy = 'recent';
+            else sortBy = 'recent';
           }}
         >
-          Sort by Name ({sortDir === 'asc' && sortBy === 'name' ? 'A-Z' : 'Z-A'})
+          Sort by Recency ({sortBy === 'recent' ? 'Newest First' : 'Oldest First'})
         </button>
         <button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
