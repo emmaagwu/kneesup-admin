@@ -437,8 +437,13 @@ export interface CreateSpaceInput {
   maxGuests: number;
   pricingModel: 'hour' | 'guest' | 'flat' | 'contact';
   hourlyRate?: string;
-  whatsIncluded?: string;
   minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
   rules?: string[];
   amenities?: string[];
   additionalFees?: Array<{ name: string; type: string; amount: string }>;
@@ -448,10 +453,35 @@ export interface CreateSpaceInput {
   notes?: string;
 }
 
+export interface UpdateSpaceInput {
+  name?: string;
+  description?: string;
+  maxGuests?: number;
+  status?: 'active' | 'inactive';
+  pricingModel?: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
+  rules?: string[];
+  amenities?: string[];
+  additionalFees?: Array<{ name: string; type?: string; amount: string }>;
+  operatingHours?: Record<string, { enabled: boolean; slots: Array<{ from: string; to: string }> }>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+  gallery?: string[];
+}
+
 export async function createSpace(input: CreateSpaceInput): Promise<string> {
   const spaceRef = adminDb.collection('venue').doc(input.venueId).collection('spaces').doc();
   
   const spaceData: Record<string, unknown> = {
+    id: spaceRef.id,
     name: input.name.trim(),
     description: input.description.trim(),
     maxGuests: input.maxGuests,
@@ -466,8 +496,22 @@ export async function createSpace(input: CreateSpaceInput): Promise<string> {
 
   if (input.pricingModel === 'hour') {
     spaceData.hourlyRate = input.hourlyRate;
-    spaceData.whatsIncluded = input.whatsIncluded;
     spaceData.minBookingHours = input.minBookingHours;
+    spaceData.maxBookingHours = input.maxBookingHours;
+  }
+
+  if (input.pricingModel === 'guest') {
+    spaceData.perGuestRate = input.perGuestRate;
+    spaceData.minGuestCount = input.minGuestCount;
+    spaceData.maxGuestCount = input.maxGuestCount;
+  }
+
+  if (input.pricingModel === 'flat') {
+    spaceData.flatRate = input.flatRate;
+  }
+
+  if (input.whatsIncluded) {
+    spaceData.whatsIncluded = input.whatsIncluded;
   }
 
   if (input.additionalFees) {
@@ -488,13 +532,109 @@ export async function createSpace(input: CreateSpaceInput): Promise<string> {
   const venueRef = adminDb.collection('venue').doc(input.venueId);
   await venueRef.set(
     { 
-      spaces: FieldValue.arrayUnion(spaceRef.id),
+      spaces: FieldValue.arrayUnion(spaceData),
       spaceCount: FieldValue.increment(1)
     },
     { merge: true }
   );
 
   return spaceRef.id;
+}
+
+export async function updateVenueSpace(venueId: string, spaceId: string, input: UpdateSpaceInput): Promise<void> {
+  const venueRef = adminDb.collection('venue').doc(venueId);
+  const venueSnap = await venueRef.get();
+  if (!venueSnap.exists) throw new Error('Venue not found');
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const rawSpaces = Array.isArray(venueData['spaces']) ? (venueData['spaces'] as Array<Record<string, unknown>>) : [];
+  const spaceIndex = rawSpaces.findIndex((space) => String(space['id'] ?? '') === spaceId);
+  if (spaceIndex < 0) throw new Error('Space not found');
+
+  const existing = rawSpaces[spaceIndex];
+  const merged: Record<string, unknown> = {
+    ...existing,
+    id: spaceId
+  };
+
+  if (typeof input.name === 'string') merged['name'] = input.name.trim();
+  if (typeof input.description === 'string') merged['description'] = input.description.trim();
+  if (typeof input.maxGuests === 'number') merged['maxGuests'] = input.maxGuests;
+  if (input.status) merged['status'] = input.status;
+
+  if (input.pricingModel) merged['pricingModel'] = input.pricingModel;
+  if (typeof input.hourlyRate === 'string') merged['hourlyRate'] = input.hourlyRate.trim();
+  if (typeof input.minBookingHours === 'string') merged['minBookingHours'] = input.minBookingHours.trim();
+  if (typeof input.maxBookingHours === 'string') merged['maxBookingHours'] = input.maxBookingHours.trim();
+  if (typeof input.perGuestRate === 'string') merged['perGuestRate'] = input.perGuestRate.trim();
+  if (typeof input.minGuestCount === 'string') merged['minGuestCount'] = input.minGuestCount.trim();
+  if (typeof input.maxGuestCount === 'string') merged['maxGuestCount'] = input.maxGuestCount.trim();
+  if (typeof input.flatRate === 'string') merged['flatRate'] = input.flatRate.trim();
+  if (typeof input.whatsIncluded === 'string') merged['whatsIncluded'] = input.whatsIncluded.trim();
+
+  const effectivePricingModel = String(input.pricingModel ?? merged['pricingModel'] ?? '').trim();
+  if (effectivePricingModel === 'hour') {
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+    delete merged['flatRate'];
+  } else if (effectivePricingModel === 'guest') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['flatRate'];
+  } else if (effectivePricingModel === 'flat') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+  } else if (effectivePricingModel === 'contact') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+    delete merged['flatRate'];
+    delete merged['whatsIncluded'];
+  }
+
+  if (Array.isArray(input.rules)) {
+    merged['rules'] = input.rules.map((rule) => rule.trim()).filter(Boolean);
+  }
+
+  if (Array.isArray(input.amenities)) {
+    merged['amenities'] = input.amenities
+      .map((amenity) => amenity.trim())
+      .filter(Boolean)
+      .map((label) => ({ label }));
+  }
+
+  if (Array.isArray(input.additionalFees)) {
+    merged['additionalFees'] = input.additionalFees
+      .map((fee) => ({
+        name: fee.name.trim(),
+        type: fee.type?.trim() || '',
+        amount: fee.amount.trim()
+      }))
+      .filter((fee) => fee.name || fee.amount);
+  }
+
+  if (input.operatingHours) merged['operatingHours'] = input.operatingHours;
+  if (typeof input.layoutImage === 'string') merged['layoutImage'] = input.layoutImage.trim();
+  if (typeof input.brochure === 'string') merged['brochure'] = input.brochure.trim();
+  if (typeof input.notes === 'string') merged['notes'] = input.notes.trim();
+  if (Array.isArray(input.gallery)) merged['gallery'] = input.gallery.filter(Boolean);
+
+  const nextSpaces = [...rawSpaces];
+  nextSpaces[spaceIndex] = merged;
+
+  await venueRef.set({ spaces: nextSpaces }, { merge: true });
+
+  // Keep subcollection in sync for deployments already reading from it.
+  await venueRef.collection('spaces').doc(spaceId).set(merged, { merge: true });
 }
 
 export interface OrganizationCascadeDeleteResult {
@@ -829,6 +969,23 @@ export interface VenueSpaceRow {
   description: string;
   maxGuest: number;
   status: 'active' | 'inactive';
+  pricingModel?: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
+  additionalFees?: Array<{ name: string; type?: string; amount: string }>;
+  rules?: string[];
+  amenities?: Array<{ label: string; icon?: string }>;
+  operatingHours?: Record<string, VenueDayHours>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+  gallery?: string[];
 }
 
 export interface VenueReservationRow {
@@ -929,12 +1086,50 @@ export async function getVenueById(id: string): Promise<{
   const rawSpaces = Array.isArray(venueData['spaces']) ? (venueData['spaces'] as Array<Record<string, unknown>>) : [];
   const spaces = rawSpaces.map((space, index) => {
     const blurbs = Array.isArray(space['blurbs']) ? (space['blurbs'] as string[]) : [];
+    const amenities = Array.isArray(space['amenities'])
+      ? (space['amenities'] as Array<Record<string, unknown> | string>)
+          .map((amenity) => {
+            if (typeof amenity === 'string') {
+              return { label: amenity.trim(), icon: undefined as string | undefined };
+            }
+            return {
+              label: String(amenity['label'] ?? ''),
+              icon: typeof amenity['icon'] === 'string' ? amenity['icon'] : undefined
+            };
+          })
+          .filter((amenity) => amenity.label)
+      : [];
     return {
       id: String(space['id'] ?? `space-${index + 1}`),
       name: String(space['name'] ?? 'Unnamed Space'),
       description: blurbs[0] ?? String(space['description'] ?? 'No description available.'),
       maxGuest: Number(space['maxGuests'] ?? space['capacity'] ?? 0),
-      status: 'active' as const
+      status: (space['status'] as 'active' | 'inactive') ?? 'active',
+      pricingModel: (space['pricingModel'] as 'hour' | 'guest' | 'flat' | 'contact') ?? undefined,
+      hourlyRate: typeof space['hourlyRate'] === 'string' ? space['hourlyRate'] : undefined,
+      minBookingHours: typeof space['minBookingHours'] === 'string' ? space['minBookingHours'] : undefined,
+      maxBookingHours: typeof space['maxBookingHours'] === 'string' ? space['maxBookingHours'] : undefined,
+      perGuestRate: typeof space['perGuestRate'] === 'string' ? space['perGuestRate'] : undefined,
+      minGuestCount: typeof space['minGuestCount'] === 'string' ? space['minGuestCount'] : undefined,
+      maxGuestCount: typeof space['maxGuestCount'] === 'string' ? space['maxGuestCount'] : undefined,
+      flatRate: typeof space['flatRate'] === 'string' ? space['flatRate'] : undefined,
+      whatsIncluded: typeof space['whatsIncluded'] === 'string' ? space['whatsIncluded'] : undefined,
+      additionalFees: Array.isArray(space['additionalFees'])
+        ? (space['additionalFees'] as Array<Record<string, unknown>>)
+          .map((fee) => ({
+            name: String(fee['name'] ?? ''),
+            type: typeof fee['type'] === 'string' ? fee['type'] : undefined,
+            amount: String(fee['amount'] ?? '')
+          }))
+          .filter((fee) => fee.name || fee.amount)
+        : undefined,
+      rules: Array.isArray(space['rules']) ? (space['rules'] as string[]).filter(Boolean) : undefined,
+      amenities: amenities.length > 0 ? amenities : undefined,
+      operatingHours: toVenueHours(space['operatingHours'] ?? space['hours']),
+      layoutImage: typeof space['layoutImage'] === 'string' ? space['layoutImage'] : undefined,
+      brochure: typeof space['brochure'] === 'string' ? space['brochure'] : undefined,
+      notes: typeof space['notes'] === 'string' ? space['notes'] : undefined,
+      gallery: Array.isArray(space['gallery']) ? (space['gallery'] as string[]).filter(Boolean) : undefined
     };
   });
 
@@ -956,14 +1151,18 @@ export async function getVenueById(id: string): Promise<{
         venue: String(data['venue'] ?? '—'),
         space: String(data['space'] ?? data['venueSpaceName'] ?? '—'),
         cost: formatVenueMoney(amount),
-        dateTime: formatDateTime(createdAt.toISOString()),
+        dateTime: formatDateTime(createdAt),
         duration: String(data['duration'] ?? '—'),
         createdAt: createdAt.getTime(),
         status
       };
     })
     .sort((left, right) => right.createdAt - left.createdAt)
-    .map(({ createdAt: _createdAt, ...reservation }) => reservation);
+    .map((row) => {
+      const { createdAt, ...reservation } = row;
+      void createdAt;
+      return reservation;
+    });
 
   const grossRevenue = reservationsSnap.docs.reduce((sum, doc) => sum + ((doc.data()['totalCost'] as number) ?? 0), 0);
   const gallery = Array.isArray(venueData['gallery'])
@@ -1519,8 +1718,9 @@ export interface OrgMemberRow {
 // If you don't have a real activity log collection, we should return [] (real).
 export type OrgActivityRow = OrgMemberRow;
 
-export async function getOrganizationActivityById(orgId: string): Promise<OrgActivityRow[]> {
+export async function getOrganizationActivityById(_orgId: string): Promise<OrgActivityRow[]> {
   // No activity source in schema you shared — return empty list instead of dummy data.
+  void _orgId;
   return [];
 }
 
