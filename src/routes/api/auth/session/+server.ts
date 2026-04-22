@@ -2,13 +2,13 @@
  * POST /api/auth/session
  *
  * Accepts a Firebase ID token from the client, verifies it,
- * checks that the user has userRole === "Admin" in Firestore,
+ * checks that the user has userRole in ["Admin", "Developer"] in Firestore,
  * and sets an HttpOnly session cookie.
  *
  * Body: { idToken: string }
  * Response 200: { user: AdminUser }
  * Response 401: { error: string }
- * Response 403: { error: string }  — authenticated but not an Admin
+ * Response 403: { error: string }  — authenticated but lacks dashboard role
  */
 
 import { json } from '@sveltejs/kit';
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
     if (!result) {
       return json(
-        { error: 'Access denied. This account does not have admin privileges.' },
+        { error: 'Access denied. This account does not have dashboard privileges.' },
         { status: 403 }
       );
     }

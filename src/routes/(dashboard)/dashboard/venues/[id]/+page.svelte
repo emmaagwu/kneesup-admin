@@ -2,13 +2,26 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import TopBar from '$components/layout/TopBar.svelte';
+  import type { PageData } from './$types';
+
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+  };
+
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   type VenueStatus = 'active' | 'inactive' | 'blocked';
   type SpaceStatus = 'active' | 'inactive';
   type Tab = 'spaces' | 'reservations' | 'operating-hours' | 'documents' | 'gallery';
 
   interface Space {
-    id: string; name: string; description: string; maxGuest: number; status: SpaceStatus; pricingModel: 'Payment per Hour' | 'Payment per Guest' | 'Flat Rental Fee' | 'Contact for Pricing';
+    id: string;
+    name: string;
+    description: string;
+    maxGuest: number;
+    status: SpaceStatus;
+    pricingModel?: 'Payment per Hour' | 'Payment per Guest' | 'Flat Rental Fee' | 'Contact for Pricing';
   }
   interface VenueReservation {
     id: string; client: string; email: string; venue: string; space: string;
@@ -17,12 +30,17 @@
   type DayHours = { enabled: boolean; slots: { from: string; to: string }[] };
   interface VenueDetail {
     id: string; name: string; organization: string; address: string;
+    country?: string; city?: string; state?: string; zip?: string;
     description: string; status: VenueStatus;
     spaceCount: number; reservationCount: number; revenue: string;
     spaces: Space[]; reservations: VenueReservation[];
     hours: Record<string, DayHours>;
     gallery: string[];
   }
+
+  type VenueOrg = { id: string; name: string };
+  type VenueEditData = VenueDetail & { orgId?: string };
+  type VenueFormResult = { successMessage?: string; errorMessage?: string };
 
   // ── Shared data ───────────────────────────────────────────────────
   const sharedSpaces: Space[] = [
@@ -73,10 +91,52 @@
 
   // ── State ─────────────────────────────────────────────────────────
   let id    = $derived($page.params.id);
-  let venue = $derived(venueDb[id] ?? venueDb['8']);
+  let venue = $derived((data.venue ?? venueDb[id ?? '8'] ?? venueDb['8']) as VenueDetail);
+  let organizations = $derived((((data as PageData & { organizations?: VenueOrg[] }).organizations) ?? []) as VenueOrg[]);
   let activeTab  = $state<Tab>('spaces');
   let showBlockModal = $state(false);
   let activeSpaceMenu = $state<string | null>(null);
+  let showEditModal = $state(false);
+  let editName = $state('');
+  let editDescription = $state('');
+  let editOrgId = $state('');
+  let editCountry = $state('');
+  let editAddress = $state('');
+  let editCity = $state('');
+  let editState = $state('');
+  let editZip = $state('');
+  let editStatus = $state<VenueStatus>('active');
+  let editError = $state('');
+  let editFormError = $derived((form as VenueFormResult | undefined)?.errorMessage ?? '');
+  let editFormSuccess = $derived((form as VenueFormResult | undefined)?.successMessage ?? '');
+
+  function openEditModal() {
+    const editableVenue = venue as VenueEditData;
+    editName = editableVenue.name;
+    editDescription = editableVenue.description;
+    editOrgId = editableVenue.orgId ?? organizations.find((org) => org.name === editableVenue.organization)?.id ?? '';
+    editCountry = editableVenue.country ?? 'United States';
+    editAddress = editableVenue.address;
+    editCity = editableVenue.city ?? '';
+    editState = editableVenue.state ?? '';
+    editZip = editableVenue.zip ?? '';
+    editStatus = editableVenue.status;
+    editError = '';
+    showEditModal = true;
+  }
+
+  function closeEditModal() {
+    showEditModal = false;
+    if ($page.url.searchParams.get('edit') === 'true') {
+      goto($page.url.pathname, { replaceState: true, noScroll: true });
+    }
+  }
+
+  $effect(() => {
+    if ($page.url.searchParams.get('edit') === 'true' && !showEditModal) {
+      openEditModal();
+    }
+  });
 
   const statusBadge: Record<string, string> = {
     active:   'text-[#16a34a] bg-[#f0fdf4]',
@@ -150,6 +210,13 @@
     Sunday:    { enabled: true,  slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
   });
 
+  const spaceTimeOptions = [
+    '12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM',
+    '6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+    '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM',
+    '6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM',
+  ];
+
 
   function addSpaceSlot(day: string) {
     spaceHours[day].slots = [...spaceHours[day].slots, { from: '6:00 AM', to: '8:00 AM' }];
@@ -220,10 +287,37 @@
   }
 
   function handleSpaceSubmit() {
-    closeSpaceDrawer();
-    clearTimeout(spaceToastTimer);
-    showSpaceToast = true;
-    spaceToastTimer = setTimeout(() => showSpaceToast = false, 5000);
+    const formData = new FormData();
+    formData.append('name', spaceName);
+    formData.append('description', spaceDescription);
+    formData.append('maxGuests', spaceMaxGuests);
+    formData.append('pricingModel', pricingModel);
+    if (pricingModel === 'hour') {
+      formData.append('hourlyRate', hourlyRate);
+      formData.append('whatsIncluded', whatsIncluded);
+      formData.append('minBookingHours', minBookingHours);
+    }
+    formData.append('rules', spaceRules.filter(r => r.trim()).join('|'));
+    formData.append('amenities', selectedAmenities.join('|'));
+    formData.append('notes', spaceNotes);
+
+    fetch(`?/createSpace`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(async (res) => {
+      const response = await res.json();
+      closeSpaceDrawer();
+      clearTimeout(spaceToastTimer);
+      showSpaceToast = true;
+      spaceToastTimer = setTimeout(() => showSpaceToast = false, 5000);
+      if (!res.ok && response.errorMessage) {
+        console.error('Space creation failed:', response.errorMessage);
+      }
+    })
+    .catch((err) => {
+      console.error('Space submission error:', err);
+    });
   }
 
   function handleSpacePhotoFiles(files: FileList | null) {
@@ -983,6 +1077,88 @@
   </div>
 {/if}
 
+{#if editFormSuccess}
+  <div class="mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534] max-w-[1400px]">
+    {editFormSuccess}
+  </div>
+{/if}
+
+{#if showEditModal}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <button type="button" aria-label="Close edit modal" class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1.5px]" onclick={closeEditModal}></button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <form method="POST" action="?/updateVenue" class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-[#e5e7eb] overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#f0f0f0]">
+        <div>
+          <h2 class="text-xl font-bold text-[#111827]">Edit Venue Details</h2>
+          <p class="text-sm text-[#9ca3af] mt-1">Update the venue record and keep the organization link in sync.</p>
+        </div>
+        <button type="button" onclick={closeEditModal} class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors" aria-label="Close edit modal">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="grid gap-4 p-5 sm:grid-cols-2">
+        {#if editFormError || editError}
+          <div class="sm:col-span-2 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+            {editFormError ?? editError}
+          </div>
+        {/if}
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-name">Name</label>
+          <input id="venue-name" name="name" bind:value={editName} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-description">Description</label>
+          <textarea id="venue-description" name="description" bind:value={editDescription} rows="4" class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#0d9488]"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-org">Organization</label>
+          <select id="venue-org" name="orgId" bind:value={editOrgId} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]">
+            <option value="" disabled>Select organization</option>
+            {#each organizations as organization (organization.id)}
+              <option value={organization.id}>{organization.name}</option>
+            {/each}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-status">Status</label>
+          <select id="venue-status" name="status" bind:value={editStatus} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#0d9488]">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-country">Country</label>
+          <input id="venue-country" name="country" bind:value={editCountry} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-zip">Zip Code</label>
+          <input id="venue-zip" name="zip" bind:value={editZip} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-address">Address</label>
+          <input id="venue-address" name="address" bind:value={editAddress} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-city">City</label>
+          <input id="venue-city" name="city" bind:value={editCity} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="venue-state">State</label>
+          <input id="venue-state" name="state" bind:value={editState} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 border-t border-[#f0f0f0] px-5 py-4 bg-[#fafafa]">
+        <button type="button" onclick={closeEditModal} class="px-4 py-2 rounded-lg border border-[#e5e7eb] text-sm font-semibold text-[#374151] hover:bg-white transition-colors">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold hover:bg-[#243647] transition-colors">Save changes</button>
+      </div>
+    </form>
+  </div>
+{/if}
+
 <TopBar
   breadcrumbs={[
     { label: 'Venues', href: '/dashboard/venues' },
@@ -1013,8 +1189,8 @@
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <button class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
-                       border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+        <button onclick={openEditModal} class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
+                 border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
           </svg>
@@ -1150,7 +1326,7 @@
                 <td class="px-4 py-4">
                   <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
                               bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]">
-                    {space.pricingModel}
+                    {space.pricingModel ?? 'Contact for Pricing'}
                   </span>
                 </td>
                 <td class="px-4 py-4 text-sm text-[#111827]">{space.maxGuest.toLocaleString()}</td>
@@ -1212,7 +1388,7 @@
                   <span class="text-xs text-[#374151]">{space.maxGuest.toLocaleString()} guests</span>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium
                               bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]">
-                    {space.pricingModel}
+                    {space.pricingModel ?? 'Contact for Pricing'}
                   </span>
                   <span class="text-xs font-semibold px-2 py-0.5 rounded-full {statusBadge[space.status]}">
                     {space.status.charAt(0).toUpperCase() + space.status.slice(1)}

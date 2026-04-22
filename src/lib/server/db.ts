@@ -14,7 +14,58 @@
  */
 
 import { adminDb } from '$lib/firebase/server';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { AdminUser } from '$lib/types';
+
+const WRITE_BATCH_SIZE = 400;
+
+async function commitDeleteByRefs(refs: FirebaseFirestore.DocumentReference[]) {
+  for (let i = 0; i < refs.length; i += WRITE_BATCH_SIZE) {
+    const batch = adminDb.batch();
+    for (const ref of refs.slice(i, i + WRITE_BATCH_SIZE)) {
+      batch.delete(ref);
+    }
+    await batch.commit();
+  }
+}
+
+function uniqueNonEmpty(ids: string[]) {
+  return [...new Set(ids.filter(Boolean))];
+}
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function normalizeProtectedIds(protectedUserIds?: string | string[]) {
+  if (!protectedUserIds) return [] as string[];
+  if (Array.isArray(protectedUserIds)) return uniqueNonEmpty(protectedUserIds);
+  return uniqueNonEmpty([protectedUserIds]);
+}
+
+function isFirestoreMissingIndexError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+  const message =
+    'message' in error ? String((error as { message?: unknown }).message ?? '') : '';
+  return code === '9' || code === 'failed-precondition' || message.includes('FAILED_PRECONDITION');
+}
+
+export async function resolveUserIdsByEmails(emails: string[]) {
+  const normalizedEmails = uniqueNonEmpty(emails.map((email) => email.trim().toLowerCase()));
+  if (normalizedEmails.length === 0) return [] as string[];
+
+  const ids = new Set<string>();
+  for (const group of chunk(normalizedEmails, 10)) {
+    const snap = await adminDb.collection('user').where('email', 'in', group).get();
+    for (const doc of snap.docs) ids.add(doc.id);
+  }
+  return Array.from(ids);
+}
 
 // ─── User / Auth ──────────────────────────────────────────────────────────────
 
@@ -29,13 +80,13 @@ export async function getUserByUid(uid: string) {
 }
 
 /**
- * Verify that the authenticated Firebase user is an Admin.
+ * Verify that the authenticated Firebase user can access dashboard features.
  *
- * The host portal stores `userRole: "Admin"` on the Firestore user document
- * for platform-level admins (see dborganization.server.js → getOrgsForUser).
+ * The host portal stores `userRole` on the Firestore user document.
+ * This admin dashboard allows `Admin` and `Developer`.
  *
  * Returns the AdminUser shape needed by the admin portal's auth store,
- * or null if the user is not found / not an admin.
+ * or null if the user is not found / not allowed.
  */
 export async function verifyAdminUser(
   uid: string,
@@ -45,17 +96,23 @@ export async function verifyAdminUser(
 ): Promise<AdminUser | null> {
   const userDoc = await getUserByUid(uid);
 
-  // Only users with userRole === "Admin" in Firestore can access the portal
-  if (!userDoc || userDoc['userRole'] !== 'Admin') {
+  // Only users with userRole in ["Admin", "Developer"] can access the portal
+  const userRole = userDoc?.['userRole'];
+  if (!userDoc || (userRole !== 'Admin' && userRole !== 'Developer')) {
     return null;
   }
+
+  const resolvedRole: AdminUser['role'] =
+    userRole === 'Developer'
+      ? 'developer'
+      : ((userDoc['adminRole'] as AdminUser['role']) ?? 'admin');
 
   return {
     uid,
     email,
     displayName: displayName ?? email,
     photoURL: photoURL ?? undefined,
-    role: (userDoc['adminRole'] as AdminUser['role']) ?? 'admin',
+    role: resolvedRole,
     createdAt: userDoc['createdAt']
       ? new Date((userDoc['createdAt'] as number) * 1000).toISOString()
       : new Date().toISOString()
@@ -123,8 +180,79 @@ const STATE_TO_STATUS: Record<string, AdminReservation['status']> = {
   NEW: 'pending',
   ACCEPTED: 'confirmed',
   DECLINED: 'cancelled',
+  APPROVED_OFFLINE_PAYMENT: 'confirmed',
   COMPLETED: 'completed'
 };
+
+const NUMERIC_STATE_TO_NAME: Record<number, keyof typeof STATE_TO_STATUS> = {
+  0: 'NEW',
+  1: 'ACCEPTED',
+  2: 'DECLINED',
+  3: 'APPROVED_OFFLINE_PAYMENT'
+};
+
+function mapReservationStateToStatus(rawState: unknown): AdminReservation['status'] {
+  if (typeof rawState === 'number') {
+    const stateName = NUMERIC_STATE_TO_NAME[rawState];
+    return stateName ? STATE_TO_STATUS[stateName] : 'pending';
+  }
+
+  if (typeof rawState === 'string') {
+    const normalized = rawState.trim().toUpperCase();
+
+    if (/^\d+$/.test(normalized)) {
+      const asNumber = Number(normalized);
+      const stateName = NUMERIC_STATE_TO_NAME[asNumber];
+      return stateName ? STATE_TO_STATUS[stateName] : 'pending';
+    }
+
+    return STATE_TO_STATUS[normalized] ?? 'pending';
+  }
+
+  return 'pending';
+}
+
+export interface AdminReservationsPage {
+  reservations: AdminReservation[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+async function resolveOrgNames(orgIds: string[]): Promise<Record<string, string>> {
+  const uniqueOrgIds = [...new Set(orgIds.filter(Boolean))];
+  const orgNames: Record<string, string> = {};
+  await Promise.all(
+    uniqueOrgIds.map(async (orgId) => {
+      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
+      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
+    })
+  );
+  return orgNames;
+}
+
+function mapReservationDoc(
+  doc: FirebaseFirestore.QueryDocumentSnapshot,
+  orgNames: Record<string, string>
+): AdminReservation {
+  const d = doc.data();
+  const orgId = (d['orgId'] as string) ?? '';
+  return {
+    id: doc.id,
+    guest: (d['laceyName'] as string) ?? 'Unknown',
+    guestEmail: (d['laceyEmail'] as string) ?? '',
+    venue: (d['venue'] as string) ?? 'Unknown Venue',
+    orgId,
+    org: orgNames[orgId] ?? '',
+    date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
+    amount: (d['totalCost'] as number) ?? 0,
+    status: mapReservationStateToStatus(d['reservationState']),
+    createdAt: d['recordCreationTimeStamp']
+      ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+      : new Date().toISOString()
+  };
+}
 
 export async function getRecentReservations(limit = 10): Promise<AdminReservation[]> {
   const snap = await adminDb
@@ -134,34 +262,8 @@ export async function getRecentReservations(limit = 10): Promise<AdminReservatio
     .get();
 
   // Batch-resolve org names
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
-  const orgNames: Record<string, string> = {};
-
-  await Promise.all(
-    orgIds.map(async (orgId) => {
-      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
-      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
-    })
-  );
-
-  return snap.docs.map((doc) => {
-    const d = doc.data();
-    const state = (d['reservationState'] as string) ?? 'NEW';
-    return {
-      id: doc.id,
-      guest: (d['laceyName'] as string) ?? 'Unknown',
-      guestEmail: (d['laceyEmail'] as string) ?? '',
-      venue: (d['venue'] as string) ?? 'Unknown Venue',
-      orgId: d['orgId'] as string,
-      org: orgNames[d['orgId'] as string] ?? '',
-      date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
-      amount: (d['totalCost'] as number) ?? 0,
-      status: STATE_TO_STATUS[state] ?? 'pending',
-      createdAt: d['recordCreationTimeStamp']
-        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
-        : new Date().toISOString()
-    };
-  });
+  const orgNames = await resolveOrgNames(snap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+  return snap.docs.map((doc) => mapReservationDoc(doc, orgNames));
 }
 
 // ─── All Reservations (with search/filter) ────────────────────────────────────
@@ -172,33 +274,36 @@ export async function getAllReservations(): Promise<AdminReservation[]> {
     .orderBy('recordCreationTimeStamp', 'desc')
     .get();
 
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
-  const orgNames: Record<string, string> = {};
-  await Promise.all(
-    orgIds.map(async (orgId) => {
-      const orgSnap = await adminDb.collection('organization').doc(orgId).get();
-      orgNames[orgId] = orgSnap.exists ? (orgSnap.data()?.['name'] ?? orgId) : orgId;
-    })
-  );
+  const orgNames = await resolveOrgNames(snap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+  return snap.docs.map((doc) => mapReservationDoc(doc, orgNames));
+}
 
-  return snap.docs.map((doc) => {
-    const d = doc.data();
-    const state = (d['reservationState'] as string) ?? 'NEW';
-    return {
-      id: doc.id,
-      guest: (d['laceyName'] as string) ?? 'Unknown',
-      guestEmail: (d['laceyEmail'] as string) ?? '',
-      venue: (d['venue'] as string) ?? 'Unknown Venue',
-      orgId: d['orgId'] as string,
-      org: orgNames[d['orgId'] as string] ?? '',
-      date: (d['eventDate'] as string) ?? new Date().toISOString().split('T')[0],
-      amount: (d['totalCost'] as number) ?? 0,
-      status: STATE_TO_STATUS[state] ?? 'pending',
-      createdAt: d['recordCreationTimeStamp']
-        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
-        : new Date().toISOString()
-    };
-  });
+export async function getReservationsPage(page = 1, pageSize = 25): Promise<AdminReservationsPage> {
+  const safePageSize = Number.isFinite(pageSize) ? Math.min(Math.max(Math.floor(pageSize), 10), 100) : 25;
+  const safePage = Number.isFinite(page) ? Math.max(Math.floor(page), 1) : 1;
+
+  const totalSnap = await adminDb.collection('reservation').count().get();
+  const total = totalSnap.data().count;
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const pageToLoad = Math.min(safePage, totalPages);
+  const offset = (pageToLoad - 1) * safePageSize;
+
+  const pageSnap = await adminDb
+    .collection('reservation')
+    .orderBy('recordCreationTimeStamp', 'desc')
+    .offset(offset)
+    .limit(safePageSize)
+    .get();
+
+  const orgNames = await resolveOrgNames(pageSnap.docs.map((d) => (d.data()['orgId'] as string) ?? ''));
+
+  return {
+    reservations: pageSnap.docs.map((doc) => mapReservationDoc(doc, orgNames)),
+    total,
+    page: pageToLoad,
+    pageSize: safePageSize,
+    totalPages
+  };
 }
 
 // ─── Organizations ────────────────────────────────────────────────────────────
@@ -219,6 +324,592 @@ export interface AdminOrganization {
   createdAt: string;
 }
 
+export interface CreateOrganizationInput {
+  name: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerTitle?: string;
+  phone?: string;
+  logoURL?: string;
+}
+
+export async function createOrganization(input: CreateOrganizationInput): Promise<string> {
+  const name = input.name.trim();
+  const ownerName = input.ownerName.trim();
+  const ownerEmail = input.ownerEmail.trim().toLowerCase();
+  const ownerTitle = input.ownerTitle?.trim() || 'Owner';
+  const phone = input.phone?.trim() || '';
+  const logoURL = input.logoURL?.trim() || '';
+  const ownerUserId = globalThis.crypto.randomUUID();
+
+  const docRef = await adminDb.collection('organization').add({
+    name,
+    email: ownerEmail,
+    ownerName,
+    ownerEmail,
+    ownerTitle,
+    phone,
+    logo: logoURL,
+    logoURL,
+    orgMembersIds: [ownerUserId],
+    orgMembers: [
+      {
+        userId: ownerUserId,
+        userRole: ownerTitle,
+        email: ownerEmail,
+        name: ownerName
+      }
+    ],
+    venues: [],
+    status: 'active'
+  });
+
+  return docRef.id;
+}
+
+export interface CreateVenueInput {
+  name: string;
+  description?: string;
+  orgId: string;
+  country: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phoneNumber?: string;
+  email?: string;
+  photoURL?: string;
+}
+
+export async function createVenue(input: CreateVenueInput): Promise<string> {
+  const name = input.name.trim();
+  const orgId = input.orgId.trim();
+  const description = input.description?.trim() || '';
+  const country = input.country.trim();
+  const address = input.address.trim();
+  const city = input.city.trim();
+  const state = input.state.trim();
+  const zip = input.zip.trim();
+  const phoneNumber = input.phoneNumber?.trim() || '';
+  const email = input.email?.trim().toLowerCase() || '';
+  const photoURL = input.photoURL?.trim() || '';
+
+  const venueRef = adminDb.collection('venue').doc();
+  await venueRef.set({
+    name,
+    description,
+    orgId,
+    country,
+    address,
+    city,
+    state,
+    zip,
+    phoneNumber,
+    email,
+    photo: photoURL,
+    photos: photoURL ? [{ src: photoURL }] : [],
+    gallery: photoURL ? [photoURL] : [],
+    spaces: [],
+    hours: {},
+    status: 'active',
+    recordCreationTimeStamp: Math.floor(Date.now() / 1000)
+  });
+
+  if (orgId) {
+    await adminDb.collection('organization').doc(orgId).set(
+      {
+        venues: FieldValue.arrayUnion(venueRef.id)
+      },
+      { merge: true }
+    );
+  }
+
+  return venueRef.id;
+}
+
+export interface UpdateVenueInput {
+  name: string;
+  description?: string;
+  orgId: string;
+  country: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  status?: 'active' | 'inactive' | 'blocked';
+}
+
+export async function updateVenueById(id: string, input: UpdateVenueInput): Promise<void> {
+  const venueRef = adminDb.collection('venue').doc(id);
+  const venueSnap = await venueRef.get();
+
+  if (!venueSnap.exists) {
+    throw new Error('Venue not found');
+  }
+
+  const existing = venueSnap.data() as Record<string, unknown>;
+  const previousOrgId = String(existing['orgId'] ?? '').trim();
+  const nextOrgId = input.orgId.trim();
+
+  await venueRef.update({
+    name: input.name.trim(),
+    description: input.description?.trim() || '',
+    orgId: nextOrgId,
+    country: input.country.trim(),
+    address: input.address.trim(),
+    city: input.city.trim(),
+    state: input.state.trim(),
+    zip: input.zip.trim(),
+    status: input.status ?? (existing['status'] as string) ?? 'active'
+  });
+
+  if (previousOrgId && previousOrgId !== nextOrgId) {
+    await adminDb.collection('organization').doc(previousOrgId).set(
+      { venues: FieldValue.arrayRemove(id) },
+      { merge: true }
+    );
+  }
+
+  if (nextOrgId) {
+    await adminDb.collection('organization').doc(nextOrgId).set(
+      { venues: FieldValue.arrayUnion(id) },
+      { merge: true }
+    );
+  }
+}
+
+export interface CreateSpaceInput {
+  venueId: string;
+  name: string;
+  description: string;
+  maxGuests: number;
+  pricingModel: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
+  rules?: string[];
+  amenities?: string[];
+  additionalFees?: Array<{ name: string; type: string; amount: string }>;
+  operatingHours?: Record<string, { enabled: boolean; slots: Array<{ from: string; to: string }> }>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+}
+
+export interface UpdateSpaceInput {
+  name?: string;
+  description?: string;
+  maxGuests?: number;
+  status?: 'active' | 'inactive';
+  pricingModel?: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
+  rules?: string[];
+  amenities?: string[];
+  additionalFees?: Array<{ name: string; type?: string; amount: string }>;
+  operatingHours?: Record<string, { enabled: boolean; slots: Array<{ from: string; to: string }> }>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+  gallery?: string[];
+}
+
+export async function createSpace(input: CreateSpaceInput): Promise<string> {
+  const spaceRef = adminDb.collection('venue').doc(input.venueId).collection('spaces').doc();
+  
+  const spaceData: Record<string, unknown> = {
+    id: spaceRef.id,
+    name: input.name.trim(),
+    description: input.description.trim(),
+    maxGuests: input.maxGuests,
+    pricingModel: input.pricingModel,
+    status: 'active',
+    rules: input.rules || [],
+    amenities: input.amenities || [],
+    operatingHours: input.operatingHours || {},
+    notes: input.notes?.trim() || '',
+    recordCreationTimeStamp: Math.floor(Date.now() / 1000)
+  };
+
+  if (input.pricingModel === 'hour') {
+    spaceData.hourlyRate = input.hourlyRate;
+    spaceData.minBookingHours = input.minBookingHours;
+    spaceData.maxBookingHours = input.maxBookingHours;
+  }
+
+  if (input.pricingModel === 'guest') {
+    spaceData.perGuestRate = input.perGuestRate;
+    spaceData.minGuestCount = input.minGuestCount;
+    spaceData.maxGuestCount = input.maxGuestCount;
+  }
+
+  if (input.pricingModel === 'flat') {
+    spaceData.flatRate = input.flatRate;
+  }
+
+  if (input.whatsIncluded) {
+    spaceData.whatsIncluded = input.whatsIncluded;
+  }
+
+  if (input.additionalFees) {
+    spaceData.additionalFees = input.additionalFees.filter(fee => fee.name.trim());
+  }
+
+  if (input.layoutImage) {
+    spaceData.layoutImage = input.layoutImage;
+  }
+
+  if (input.brochure) {
+    spaceData.brochure = input.brochure;
+  }
+
+  await spaceRef.set(spaceData);
+
+  // Update parent venue's spaces count
+  const venueRef = adminDb.collection('venue').doc(input.venueId);
+  await venueRef.set(
+    { 
+      spaces: FieldValue.arrayUnion(spaceData),
+      spaceCount: FieldValue.increment(1)
+    },
+    { merge: true }
+  );
+
+  return spaceRef.id;
+}
+
+export async function updateVenueSpace(venueId: string, spaceId: string, input: UpdateSpaceInput): Promise<void> {
+  const venueRef = adminDb.collection('venue').doc(venueId);
+  const venueSnap = await venueRef.get();
+  if (!venueSnap.exists) throw new Error('Venue not found');
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const rawSpaces = Array.isArray(venueData['spaces']) ? (venueData['spaces'] as Array<Record<string, unknown>>) : [];
+  const spaceIndex = rawSpaces.findIndex((space) => String(space['id'] ?? '') === spaceId);
+  if (spaceIndex < 0) throw new Error('Space not found');
+
+  const existing = rawSpaces[spaceIndex];
+  const merged: Record<string, unknown> = {
+    ...existing,
+    id: spaceId
+  };
+
+  if (typeof input.name === 'string') merged['name'] = input.name.trim();
+  if (typeof input.description === 'string') merged['description'] = input.description.trim();
+  if (typeof input.maxGuests === 'number') merged['maxGuests'] = input.maxGuests;
+  if (input.status) merged['status'] = input.status;
+
+  if (input.pricingModel) merged['pricingModel'] = input.pricingModel;
+  if (typeof input.hourlyRate === 'string') merged['hourlyRate'] = input.hourlyRate.trim();
+  if (typeof input.minBookingHours === 'string') merged['minBookingHours'] = input.minBookingHours.trim();
+  if (typeof input.maxBookingHours === 'string') merged['maxBookingHours'] = input.maxBookingHours.trim();
+  if (typeof input.perGuestRate === 'string') merged['perGuestRate'] = input.perGuestRate.trim();
+  if (typeof input.minGuestCount === 'string') merged['minGuestCount'] = input.minGuestCount.trim();
+  if (typeof input.maxGuestCount === 'string') merged['maxGuestCount'] = input.maxGuestCount.trim();
+  if (typeof input.flatRate === 'string') merged['flatRate'] = input.flatRate.trim();
+  if (typeof input.whatsIncluded === 'string') merged['whatsIncluded'] = input.whatsIncluded.trim();
+
+  const effectivePricingModel = String(input.pricingModel ?? merged['pricingModel'] ?? '').trim();
+  if (effectivePricingModel === 'hour') {
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+    delete merged['flatRate'];
+  } else if (effectivePricingModel === 'guest') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['flatRate'];
+  } else if (effectivePricingModel === 'flat') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+  } else if (effectivePricingModel === 'contact') {
+    delete merged['hourlyRate'];
+    delete merged['minBookingHours'];
+    delete merged['maxBookingHours'];
+    delete merged['perGuestRate'];
+    delete merged['minGuestCount'];
+    delete merged['maxGuestCount'];
+    delete merged['flatRate'];
+    delete merged['whatsIncluded'];
+  }
+
+  if (Array.isArray(input.rules)) {
+    merged['rules'] = input.rules.map((rule) => rule.trim()).filter(Boolean);
+  }
+
+  if (Array.isArray(input.amenities)) {
+    merged['amenities'] = input.amenities
+      .map((amenity) => amenity.trim())
+      .filter(Boolean)
+      .map((label) => ({ label }));
+  }
+
+  if (Array.isArray(input.additionalFees)) {
+    merged['additionalFees'] = input.additionalFees
+      .map((fee) => ({
+        name: fee.name.trim(),
+        type: fee.type?.trim() || '',
+        amount: fee.amount.trim()
+      }))
+      .filter((fee) => fee.name || fee.amount);
+  }
+
+  if (input.operatingHours) merged['operatingHours'] = input.operatingHours;
+  if (typeof input.layoutImage === 'string') merged['layoutImage'] = input.layoutImage.trim();
+  if (typeof input.brochure === 'string') merged['brochure'] = input.brochure.trim();
+  if (typeof input.notes === 'string') merged['notes'] = input.notes.trim();
+  if (Array.isArray(input.gallery)) merged['gallery'] = input.gallery.filter(Boolean);
+
+  const nextSpaces = [...rawSpaces];
+  nextSpaces[spaceIndex] = merged;
+
+  await venueRef.set({ spaces: nextSpaces }, { merge: true });
+
+  // Keep subcollection in sync for deployments already reading from it.
+  await venueRef.collection('spaces').doc(spaceId).set(merged, { merge: true });
+}
+
+export interface OrganizationCascadeDeleteResult {
+  orgId: string;
+  deletedOrganization: boolean;
+  deletedVenues: number;
+  deletedReservations: number;
+  deletedGuests: number;
+  detachedUsers: number;
+}
+
+export interface OrganizationCascadePreviewResult {
+  orgId: string;
+  organizationExists: boolean;
+  venues: number;
+  reservations: number;
+  guests: number;
+  usersToDetach: number;
+}
+
+async function collectOrganizationCascadeTargets(orgId: string) {
+  const organizationRef = adminDb.collection('organization').doc(orgId);
+  const organizationSnap = await organizationRef.get();
+  if (!organizationSnap.exists) {
+    return {
+      organizationRef,
+      organizationExists: false,
+      venuesSnap: null,
+      reservationsSnap: null,
+      usersSnap: null,
+      guestRefsMap: new Map<string, FirebaseFirestore.DocumentReference>()
+    };
+  }
+
+  const [venuesSnap, reservationsSnap, usersSnap, guestsByOrgSnap] = await Promise.all([
+    adminDb.collection('venue').where('orgId', '==', orgId).get(),
+    adminDb.collection('reservation').where('orgId', '==', orgId).get(),
+    adminDb.collection('user').where('orgId', '==', orgId).get(),
+    adminDb.collection('guests').where('orgId', '==', orgId).get()
+  ]);
+
+  const venueIds = uniqueNonEmpty(venuesSnap.docs.map((doc) => doc.id));
+  const reservationIds = uniqueNonEmpty(reservationsSnap.docs.map((doc) => doc.id));
+
+  const guestRefsMap = new Map<string, FirebaseFirestore.DocumentReference>();
+  for (const doc of guestsByOrgSnap.docs) {
+    guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  for (const ids of chunk(venueIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('venueId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  for (const ids of chunk(reservationIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('reservationId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  return {
+    organizationRef,
+    organizationExists: true,
+    venuesSnap,
+    reservationsSnap,
+    usersSnap,
+    guestRefsMap
+  };
+}
+
+export async function previewDeleteOrganizationCascade(orgId: string): Promise<OrganizationCascadePreviewResult> {
+  const targets = await collectOrganizationCascadeTargets(orgId);
+  if (!targets.organizationExists || !targets.venuesSnap || !targets.reservationsSnap || !targets.usersSnap) {
+    return {
+      orgId,
+      organizationExists: false,
+      venues: 0,
+      reservations: 0,
+      guests: 0,
+      usersToDetach: 0
+    };
+  }
+
+  return {
+    orgId,
+    organizationExists: true,
+    venues: targets.venuesSnap.size,
+    reservations: targets.reservationsSnap.size,
+    guests: targets.guestRefsMap.size,
+    usersToDetach: targets.usersSnap.size
+  };
+}
+
+export async function previewDeleteOrganizationsCascade(orgIds: string[]) {
+  const targetIds = uniqueNonEmpty(orgIds);
+  const results: OrganizationCascadePreviewResult[] = [];
+  for (const orgId of targetIds) {
+    results.push(await previewDeleteOrganizationCascade(orgId));
+  }
+  return results;
+}
+
+export async function deleteOrganizationCascade(orgId: string): Promise<OrganizationCascadeDeleteResult> {
+  const targets = await collectOrganizationCascadeTargets(orgId);
+  if (
+    !targets.organizationExists ||
+    !targets.venuesSnap ||
+    !targets.reservationsSnap ||
+    !targets.usersSnap
+  ) {
+    return {
+      orgId,
+      deletedOrganization: false,
+      deletedVenues: 0,
+      deletedReservations: 0,
+      deletedGuests: 0,
+      detachedUsers: 0
+    };
+  }
+
+  for (let i = 0; i < targets.usersSnap.docs.length; i += WRITE_BATCH_SIZE) {
+    const batch = adminDb.batch();
+    for (const userDoc of targets.usersSnap.docs.slice(i, i + WRITE_BATCH_SIZE)) {
+      batch.update(userDoc.ref, { orgId: FieldValue.delete() });
+    }
+    await batch.commit();
+  }
+
+  await commitDeleteByRefs(Array.from(targets.guestRefsMap.values()));
+  await commitDeleteByRefs(targets.reservationsSnap.docs.map((doc) => doc.ref));
+  await commitDeleteByRefs(targets.venuesSnap.docs.map((doc) => doc.ref));
+  await targets.organizationRef.delete();
+
+  return {
+    orgId,
+    deletedOrganization: true,
+    deletedVenues: targets.venuesSnap.size,
+    deletedReservations: targets.reservationsSnap.size,
+    deletedGuests: targets.guestRefsMap.size,
+    detachedUsers: targets.usersSnap.size
+  };
+}
+
+export async function deleteOrganizationsCascade(orgIds: string[]) {
+  const targetIds = uniqueNonEmpty(orgIds);
+  const results: OrganizationCascadeDeleteResult[] = [];
+  for (const orgId of targetIds) {
+    results.push(await deleteOrganizationCascade(orgId));
+  }
+  return results;
+}
+
+export interface DeleteUserResult {
+  userId: string;
+  deletedUser: boolean;
+  detachedFromOrganizations: number;
+}
+
+export interface DeleteUserPreviewResult {
+  userId: string;
+  userExists: boolean;
+  organizationsToDetach: number;
+}
+
+export async function previewDeleteUserAccount(userId: string): Promise<DeleteUserPreviewResult> {
+  const userRef = adminDb.collection('user').doc(userId);
+  const [userSnap, orgsSnap] = await Promise.all([
+    userRef.get(),
+    adminDb.collection('organization').where('orgMembersIds', 'array-contains', userId).get()
+  ]);
+
+  return {
+    userId,
+    userExists: userSnap.exists,
+    organizationsToDetach: orgsSnap.size
+  };
+}
+
+export async function previewDeleteUserAccounts(userIds: string[], protectedUserIds?: string | string[]) {
+  const protectedIdsSet = new Set(normalizeProtectedIds(protectedUserIds));
+  const uniqueInputIds = uniqueNonEmpty(userIds);
+  const targetIds = uniqueInputIds.filter((id) => !protectedIdsSet.has(id));
+  const skippedProtected = uniqueInputIds.filter((id) => protectedIdsSet.has(id)).length;
+
+  const results: DeleteUserPreviewResult[] = [];
+  for (const userId of targetIds) {
+    results.push(await previewDeleteUserAccount(userId));
+  }
+
+  return { results, skippedProtected };
+}
+
+export async function deleteUserAccount(userId: string): Promise<DeleteUserResult> {
+  const userRef = adminDb.collection('user').doc(userId);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    return { userId, deletedUser: false, detachedFromOrganizations: 0 };
+  }
+
+  const orgsSnap = await adminDb.collection('organization').where('orgMembersIds', 'array-contains', userId).get();
+  for (const orgDoc of orgsSnap.docs) {
+    const data = orgDoc.data();
+    const orgMembersIds = ((data['orgMembersIds'] as string[]) ?? []).filter((id) => id !== userId);
+    const orgMembers = ((data['orgMembers'] as Array<Record<string, unknown>>) ?? []).filter(
+      (member) => String(member.userId ?? '') !== userId
+    );
+
+    await orgDoc.ref.update({ orgMembersIds, orgMembers });
+  }
+
+  await userRef.delete();
+  return { userId, deletedUser: true, detachedFromOrganizations: orgsSnap.size };
+}
+
+export async function deleteUserAccounts(userIds: string[], protectedUserIds?: string | string[]) {
+  const protectedIdsSet = new Set(normalizeProtectedIds(protectedUserIds));
+  const uniqueInputIds = uniqueNonEmpty(userIds);
+  const targetIds = uniqueInputIds.filter((id) => !protectedIdsSet.has(id));
+  const skippedProtected = uniqueInputIds.filter((id) => protectedIdsSet.has(id)).length;
+
+  const results: DeleteUserResult[] = [];
+  for (const userId of targetIds) {
+    results.push(await deleteUserAccount(userId));
+  }
+
+  return { results, skippedProtected };
+}
+
 export async function getAllOrganizations(): Promise<AdminOrganization[]> {
   const snap = await adminDb.collection('organization').get();
 
@@ -230,12 +921,12 @@ export async function getAllOrganizations(): Promise<AdminOrganization[]> {
     return {
       id: doc.id,
       name: (d['name'] as string) ?? 'Unnamed Organisation',
-      email: owner?.email ?? '',
+      email: owner?.email ?? (d['email'] as string) ?? '',
       phone: '', // ⚠️ Not available in current schema
-      logoURL: (d['logo'] as string | undefined) ?? undefined,
+      logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
       venueCount: ((d['venues'] as string[]) ?? []).length,
-      status: 'active', // ⚠️ No status field in current schema
-      createdAt: new Date().toISOString() // ⚠️ No createdAt on orgs in current schema
+      status: (d['status'] as AdminOrganization['status']) ?? 'active',
+      createdAt: doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
     };
   });
 }
@@ -249,12 +940,305 @@ export async function getOrganizationById(id: string): Promise<AdminOrganization
   return {
     id: doc.id,
     name: (d['name'] as string) ?? 'Unnamed Organisation',
-    email: owner?.email ?? '',
+    email: owner?.email ?? (d['email'] as string) ?? '',
     phone: '',
-    logoURL: (d['logo'] as string | undefined) ?? undefined,
+    logoURL: (d['logo'] as string | undefined) ?? (d['logoURL'] as string | undefined) ?? undefined,
     venueCount: ((d['venues'] as string[]) ?? []).length,
-    status: 'active',
-    createdAt: new Date().toISOString()
+    status: (d['status'] as AdminOrganization['status']) ?? 'active',
+    createdAt: doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
+  };
+}
+
+export interface UpdateOrganizationInput {
+  name: string;
+  ownerUserId?: string;
+  ownerName: string;
+  ownerEmail: string;
+  ownerTitle?: string;
+}
+
+export async function updateOrganizationById(id: string, input: UpdateOrganizationInput): Promise<void> {
+  const orgRef = adminDb.collection('organization').doc(id);
+  const orgSnap = await orgRef.get();
+
+  if (!orgSnap.exists) {
+    throw new Error('Organization not found');
+  }
+
+  const orgData = orgSnap.data() as Record<string, unknown>;
+  const members = Array.isArray(orgData['orgMembers']) ? [...(orgData['orgMembers'] as Array<Record<string, unknown>>)] : [];
+  const resolvedOwnerUserId = input.ownerUserId?.trim() || String(members.find((member) => String(member.userRole ?? '').toLowerCase() === 'owner')?.userId ?? '');
+  const ownerMember = {
+    userId: resolvedOwnerUserId || globalThis.crypto.randomUUID(),
+    userRole: input.ownerTitle?.trim() || 'Owner',
+    email: input.ownerEmail.trim().toLowerCase(),
+    name: input.ownerName.trim()
+  };
+
+  const ownerIndex = members.findIndex((member) => String(member.userId ?? '') === ownerMember.userId);
+  if (ownerIndex >= 0) {
+    members[ownerIndex] = ownerMember;
+  } else {
+    members.unshift(ownerMember);
+  }
+
+  const orgMemberIds = uniqueNonEmpty([
+    ...(Array.isArray(orgData['orgMembersIds']) ? (orgData['orgMembersIds'] as string[]) : []),
+    ownerMember.userId
+  ]);
+
+  await orgRef.update({
+    name: input.name.trim(),
+    email: input.ownerEmail.trim().toLowerCase(),
+    ownerName: input.ownerName.trim(),
+    ownerEmail: input.ownerEmail.trim().toLowerCase(),
+    ownerTitle: input.ownerTitle?.trim() || 'Owner',
+    orgMembersIds: orgMemberIds,
+    orgMembers: members
+  });
+
+  if (ownerMember.userId) {
+    await adminDb.collection('user').doc(ownerMember.userId).set(
+      {
+        email: input.ownerEmail.trim().toLowerCase(),
+        profile: {
+          firstName: input.ownerName.trim().split(' ')[0] ?? '',
+          lastName: input.ownerName.trim().split(' ').slice(1).join(' ')
+        }
+      },
+      { merge: true }
+    );
+  }
+}
+
+export interface VenueSpaceRow {
+  id: string;
+  name: string;
+  description: string;
+  maxGuest: number;
+  status: 'active' | 'inactive';
+  pricingModel?: 'hour' | 'guest' | 'flat' | 'contact';
+  hourlyRate?: string;
+  minBookingHours?: string;
+  maxBookingHours?: string;
+  perGuestRate?: string;
+  minGuestCount?: string;
+  maxGuestCount?: string;
+  flatRate?: string;
+  whatsIncluded?: string;
+  additionalFees?: Array<{ name: string; type?: string; amount: string }>;
+  rules?: string[];
+  amenities?: Array<{ label: string; icon?: string }>;
+  operatingHours?: Record<string, VenueDayHours>;
+  layoutImage?: string;
+  brochure?: string;
+  notes?: string;
+  gallery?: string[];
+}
+
+export interface VenueReservationRow {
+  id: string;
+  client: string;
+  email: string;
+  venue: string;
+  space: string;
+  cost: string;
+  dateTime: string;
+  duration: string;
+  status: 'active' | 'inactive';
+}
+
+type VenueDayHours = { enabled: boolean; slots: { from: string; to: string }[] };
+
+const DEFAULT_VENUE_HOURS: Record<string, VenueDayHours> = {
+  Monday: { enabled: false, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Tuesday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }, { from: '10:00 AM', to: '6:00 PM' }] },
+  Wednesday: { enabled: true, slots: [{ from: '10:00 AM', to: '6:00 PM' }] },
+  Thursday: { enabled: false, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Friday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Saturday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] },
+  Sunday: { enabled: true, slots: [{ from: '6:00 AM', to: '8:00 AM' }] }
+};
+
+const DEFAULT_VENUE_GALLERY = [
+  '/images/venue-image1.png',
+  '/images/venue-image2.png',
+  '/images/venue-image3.png',
+  '/images/venue-image4.png',
+  '/images/venue-image5.png',
+  '/images/venue-image6.png',
+  '/images/venue-image7.png',
+  '/images/venue-image8.png'
+];
+
+function toVenueHours(value: unknown): Record<string, VenueDayHours> {
+  if (!value || typeof value !== 'object') return DEFAULT_VENUE_HOURS;
+  const source = value as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(DEFAULT_VENUE_HOURS).map(([day, fallback]) => {
+      const dayValue = source[day] as Record<string, unknown> | undefined;
+      const slots = Array.isArray(dayValue?.slots)
+        ? (dayValue?.slots as Array<{ from?: string; to?: string }>).map((slot) => ({
+            from: slot.from ?? '6:00 AM',
+            to: slot.to ?? '8:00 AM'
+          }))
+        : fallback.slots;
+      return [
+        day,
+        {
+          enabled: typeof dayValue?.enabled === 'boolean' ? dayValue.enabled : fallback.enabled,
+          slots: slots.length > 0 ? slots : fallback.slots
+        }
+      ];
+    })
+  );
+}
+
+function formatVenueMoney(amount: number) {
+  return `$${Math.round(amount).toLocaleString('en-US')}`;
+}
+
+export async function getVenueById(id: string): Promise<{
+  id: string;
+  name: string;
+  organization: string;
+  address: string;
+  country: string;
+  city: string;
+  state: string;
+  zip: string;
+  description: string;
+  status: 'active' | 'inactive' | 'blocked';
+  spaceCount: number;
+  reservationCount: number;
+  revenue: string;
+  spaces: VenueSpaceRow[];
+  reservations: VenueReservationRow[];
+  hours: Record<string, VenueDayHours>;
+  gallery: string[];
+} | null> {
+  const [venueSnap, reservationsSnap] = await Promise.all([
+    adminDb.collection('venue').doc(id).get(),
+    adminDb.collection('reservation').where('venueId', '==', id).get()
+  ]);
+
+  if (!venueSnap.exists) return null;
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const orgId = String(venueData['orgId'] ?? '');
+  const orgSnap = orgId ? await adminDb.collection('organization').doc(orgId).get() : null;
+  const organizationName = orgSnap?.exists
+    ? String(orgSnap.data()?.['name'] ?? (orgId || 'Unknown Org'))
+    : (orgId || 'Unknown Org');
+
+  const rawSpaces = Array.isArray(venueData['spaces']) ? (venueData['spaces'] as Array<Record<string, unknown>>) : [];
+  const spaces = rawSpaces.map((space, index) => {
+    const blurbs = Array.isArray(space['blurbs']) ? (space['blurbs'] as string[]) : [];
+    const amenities = Array.isArray(space['amenities'])
+      ? (space['amenities'] as Array<Record<string, unknown> | string>)
+          .map((amenity) => {
+            if (typeof amenity === 'string') {
+              return { label: amenity.trim(), icon: undefined as string | undefined };
+            }
+            return {
+              label: String(amenity['label'] ?? ''),
+              icon: typeof amenity['icon'] === 'string' ? amenity['icon'] : undefined
+            };
+          })
+          .filter((amenity) => amenity.label)
+      : [];
+    return {
+      id: String(space['id'] ?? `space-${index + 1}`),
+      name: String(space['name'] ?? 'Unnamed Space'),
+      description: blurbs[0] ?? String(space['description'] ?? 'No description available.'),
+      maxGuest: Number(space['maxGuests'] ?? space['capacity'] ?? 0),
+      status: (space['status'] as 'active' | 'inactive') ?? 'active',
+      pricingModel: (space['pricingModel'] as 'hour' | 'guest' | 'flat' | 'contact') ?? undefined,
+      hourlyRate: typeof space['hourlyRate'] === 'string' ? space['hourlyRate'] : undefined,
+      minBookingHours: typeof space['minBookingHours'] === 'string' ? space['minBookingHours'] : undefined,
+      maxBookingHours: typeof space['maxBookingHours'] === 'string' ? space['maxBookingHours'] : undefined,
+      perGuestRate: typeof space['perGuestRate'] === 'string' ? space['perGuestRate'] : undefined,
+      minGuestCount: typeof space['minGuestCount'] === 'string' ? space['minGuestCount'] : undefined,
+      maxGuestCount: typeof space['maxGuestCount'] === 'string' ? space['maxGuestCount'] : undefined,
+      flatRate: typeof space['flatRate'] === 'string' ? space['flatRate'] : undefined,
+      whatsIncluded: typeof space['whatsIncluded'] === 'string' ? space['whatsIncluded'] : undefined,
+      additionalFees: Array.isArray(space['additionalFees'])
+        ? (space['additionalFees'] as Array<Record<string, unknown>>)
+          .map((fee) => ({
+            name: String(fee['name'] ?? ''),
+            type: typeof fee['type'] === 'string' ? fee['type'] : undefined,
+            amount: String(fee['amount'] ?? '')
+          }))
+          .filter((fee) => fee.name || fee.amount)
+        : undefined,
+      rules: Array.isArray(space['rules']) ? (space['rules'] as string[]).filter(Boolean) : undefined,
+      amenities: amenities.length > 0 ? amenities : undefined,
+      operatingHours: toVenueHours(space['operatingHours'] ?? space['hours']),
+      layoutImage: typeof space['layoutImage'] === 'string' ? space['layoutImage'] : undefined,
+      brochure: typeof space['brochure'] === 'string' ? space['brochure'] : undefined,
+      notes: typeof space['notes'] === 'string' ? space['notes'] : undefined,
+      gallery: Array.isArray(space['gallery']) ? (space['gallery'] as string[]).filter(Boolean) : undefined
+    };
+  });
+
+  const reservations = reservationsSnap.docs
+    .map((doc) => {
+      const data = doc.data();
+      const amount = (data['totalCost'] as number) ?? 0;
+      const createdAt = data['recordCreationTimeStamp']
+        ? new Date((data['recordCreationTimeStamp'] as number) * 1000)
+        : new Date();
+
+      const state = String(data['reservationState'] ?? 'NEW');
+      const status: 'active' | 'inactive' = ['DECLINED', 'CANCELLED'].includes(state) ? 'inactive' : 'active';
+
+      return {
+        id: doc.id,
+        client: String(data['laceyName'] ?? '—'),
+        email: String(data['laceyEmail'] ?? '—'),
+        venue: String(data['venue'] ?? '—'),
+        space: String(data['space'] ?? data['venueSpaceName'] ?? '—'),
+        cost: formatVenueMoney(amount),
+        dateTime: formatDateTime(createdAt),
+        duration: String(data['duration'] ?? '—'),
+        createdAt: createdAt.getTime(),
+        status
+      };
+    })
+    .sort((left, right) => right.createdAt - left.createdAt)
+    .map((row) => {
+      const { createdAt, ...reservation } = row;
+      void createdAt;
+      return reservation;
+    });
+
+  const grossRevenue = reservationsSnap.docs.reduce((sum, doc) => sum + ((doc.data()['totalCost'] as number) ?? 0), 0);
+  const gallery = Array.isArray(venueData['gallery'])
+    ? (venueData['gallery'] as string[]).filter(Boolean)
+    : Array.isArray(venueData['photos'])
+      ? (venueData['photos'] as Array<{ src?: string }>).map((photo) => photo.src ?? '').filter(Boolean)
+      : [];
+
+  const addressParts = [venueData['address'], venueData['city'], venueData['state'], venueData['zip']].filter(Boolean);
+
+  return {
+    id: venueSnap.id,
+    name: String(venueData['name'] ?? 'Unnamed Venue'),
+    organization: organizationName,
+    address: addressParts.join(', '),
+    country: String(venueData['country'] ?? ''),
+    city: String(venueData['city'] ?? ''),
+    state: String(venueData['state'] ?? ''),
+    zip: String(venueData['zip'] ?? ''),
+    description: String(venueData['description'] ?? 'No description available.'),
+    status: (venueData['status'] as 'active' | 'inactive' | 'blocked') ?? 'active',
+    spaceCount: spaces.length,
+    reservationCount: reservations.length,
+    revenue: formatVenueMoney(grossRevenue),
+    spaces,
+    reservations,
+    hours: toVenueHours(venueData['hours'] ?? venueData['operatingHours']),
+    gallery: gallery.length > 0 ? gallery : DEFAULT_VENUE_GALLERY
   };
 }
 
@@ -305,6 +1289,7 @@ export interface AdminVenue {
   status: 'active' | 'inactive' | 'blocked';
   /** ⚠️ rating: Not stored in Firestore venue document at all */
   rating: number;
+  createdAt: string;
 }
 
 export async function getAllVenues(): Promise<AdminVenue[]> {
@@ -332,9 +1317,215 @@ export async function getAllVenues(): Promise<AdminVenue[]> {
       country: (d['country'] as string) ?? '',
       spacesCount: ((d['spaces'] as unknown[]) ?? []).length,
       status: 'active', // ⚠️ No status field in current schema
-      rating: 0 // ⚠️ No rating field in current schema
+      rating: 0, // ⚠️ No rating field in current schema
+      createdAt: d['recordCreationTimeStamp']
+        ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+        : doc.createTime?.toDate().toISOString() ?? new Date().toISOString()
     };
-  });
+  }).sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
+export interface VenueCascadePreviewResult {
+  venueId: string;
+  venueExists: boolean;
+  reservations: number;
+  guests: number;
+  detachedFromOrganization: number;
+}
+
+export interface VenueCascadeDeleteResult {
+  venueId: string;
+  deletedVenue: boolean;
+  deletedReservations: number;
+  deletedGuests: number;
+  detachedFromOrganization: number;
+}
+
+async function collectVenueCascadeTargets(venueId: string) {
+  const venueRef = adminDb.collection('venue').doc(venueId);
+  const venueSnap = await venueRef.get();
+  if (!venueSnap.exists) {
+    return {
+      venueRef,
+      venueExists: false,
+      venueData: null,
+      reservationsSnap: null,
+      guestRefsMap: new Map<string, FirebaseFirestore.DocumentReference>()
+    };
+  }
+
+  const venueData = venueSnap.data() as Record<string, unknown>;
+  const reservationsSnap = await adminDb.collection('reservation').where('venueId', '==', venueId).get();
+  const reservationIds = uniqueNonEmpty(reservationsSnap.docs.map((doc) => doc.id));
+
+  const guestRefsMap = new Map<string, FirebaseFirestore.DocumentReference>();
+  const guestsByVenueSnap = await adminDb.collection('guests').where('venueId', '==', venueId).get();
+  for (const doc of guestsByVenueSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+
+  for (const ids of chunk(reservationIds, 10)) {
+    const guestsSnap = await adminDb.collection('guests').where('reservationId', 'in', ids).get();
+    for (const doc of guestsSnap.docs) guestRefsMap.set(doc.id, doc.ref);
+  }
+
+  return {
+    venueRef,
+    venueExists: true,
+    venueData,
+    reservationsSnap,
+    guestRefsMap
+  };
+}
+
+export async function previewDeleteVenueCascade(venueId: string): Promise<VenueCascadePreviewResult> {
+  const targets = await collectVenueCascadeTargets(venueId);
+  if (!targets.venueExists || !targets.reservationsSnap || !targets.venueData) {
+    return {
+      venueId,
+      venueExists: false,
+      reservations: 0,
+      guests: 0,
+      detachedFromOrganization: 0
+    };
+  }
+
+  const orgId = String(targets.venueData.orgId ?? '');
+  const detachedFromOrganization = orgId ? 1 : 0;
+
+  return {
+    venueId,
+    venueExists: true,
+    reservations: targets.reservationsSnap.size,
+    guests: targets.guestRefsMap.size,
+    detachedFromOrganization
+  };
+}
+
+export async function previewDeleteVenuesCascade(venueIds: string[]) {
+  const targetIds = uniqueNonEmpty(venueIds);
+  const results: VenueCascadePreviewResult[] = [];
+  for (const venueId of targetIds) {
+    results.push(await previewDeleteVenueCascade(venueId));
+  }
+  return results;
+}
+
+export async function deleteVenueCascade(venueId: string): Promise<VenueCascadeDeleteResult> {
+  const targets = await collectVenueCascadeTargets(venueId);
+  if (!targets.venueExists || !targets.reservationsSnap || !targets.venueData) {
+    return {
+      venueId,
+      deletedVenue: false,
+      deletedReservations: 0,
+      deletedGuests: 0,
+      detachedFromOrganization: 0
+    };
+  }
+
+  const orgId = String(targets.venueData.orgId ?? '');
+  let detachedFromOrganization = 0;
+  if (orgId) {
+    const orgRef = adminDb.collection('organization').doc(orgId);
+    const orgSnap = await orgRef.get();
+    if (orgSnap.exists) {
+      await orgRef.update({
+        venues: FieldValue.arrayRemove(venueId)
+      });
+      detachedFromOrganization = 1;
+    }
+  }
+
+  await commitDeleteByRefs(Array.from(targets.guestRefsMap.values()));
+  await commitDeleteByRefs(targets.reservationsSnap.docs.map((doc) => doc.ref));
+  await targets.venueRef.delete();
+
+  return {
+    venueId,
+    deletedVenue: true,
+    deletedReservations: targets.reservationsSnap.size,
+    deletedGuests: targets.guestRefsMap.size,
+    detachedFromOrganization
+  };
+}
+
+export async function deleteVenuesCascade(venueIds: string[]) {
+  const targetIds = uniqueNonEmpty(venueIds);
+  const results: VenueCascadeDeleteResult[] = [];
+  for (const venueId of targetIds) {
+    results.push(await deleteVenueCascade(venueId));
+  }
+  return results;
+}
+
+export interface ReservationCascadePreviewResult {
+  reservationId: string;
+  reservationExists: boolean;
+  guests: number;
+}
+
+export interface ReservationCascadeDeleteResult {
+  reservationId: string;
+  deletedReservation: boolean;
+  deletedGuests: number;
+}
+
+async function collectReservationCascadeTargets(reservationId: string) {
+  const reservationRef = adminDb.collection('reservation').doc(reservationId);
+  const [reservationSnap, guestsSnap] = await Promise.all([
+    reservationRef.get(),
+    adminDb.collection('guests').where('reservationId', '==', reservationId).get()
+  ]);
+
+  return {
+    reservationRef,
+    reservationExists: reservationSnap.exists,
+    guestRefs: guestsSnap.docs.map((doc) => doc.ref)
+  };
+}
+
+export async function previewDeleteReservationCascade(reservationId: string): Promise<ReservationCascadePreviewResult> {
+  const targets = await collectReservationCascadeTargets(reservationId);
+  return {
+    reservationId,
+    reservationExists: targets.reservationExists,
+    guests: targets.guestRefs.length
+  };
+}
+
+export async function previewDeleteReservationsCascade(reservationIds: string[]) {
+  const targetIds = uniqueNonEmpty(reservationIds);
+  const results: ReservationCascadePreviewResult[] = [];
+  for (const reservationId of targetIds) {
+    results.push(await previewDeleteReservationCascade(reservationId));
+  }
+  return results;
+}
+
+export async function deleteReservationCascade(reservationId: string): Promise<ReservationCascadeDeleteResult> {
+  const targets = await collectReservationCascadeTargets(reservationId);
+  if (!targets.reservationExists) {
+    return {
+      reservationId,
+      deletedReservation: false,
+      deletedGuests: 0
+    };
+  }
+
+  await commitDeleteByRefs(targets.guestRefs);
+  await targets.reservationRef.delete();
+  return {
+    reservationId,
+    deletedReservation: true,
+    deletedGuests: targets.guestRefs.length
+  };
+}
+
+export async function deleteReservationsCascade(reservationIds: string[]) {
+  const targetIds = uniqueNonEmpty(reservationIds);
+  const results: ReservationCascadeDeleteResult[] = [];
+  for (const reservationId of targetIds) {
+    results.push(await deleteReservationCascade(reservationId));
+  }
+  return results;
 }
 
 // ─── Revenue Records ──────────────────────────────────────────────────────────
@@ -356,13 +1547,30 @@ export interface AdminRevenueRecord {
 const PLATFORM_FEE_PCT = 0.1;
 
 export async function getRevenueRecords(): Promise<AdminRevenueRecord[]> {
-  const snap = await adminDb
-    .collection('reservation')
-    .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
-    .orderBy('recordCreationTimeStamp', 'desc')
-    .get();
+  let snap: FirebaseFirestore.QuerySnapshot;
+  try {
+    snap = await adminDb
+      .collection('reservation')
+      .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
+      .orderBy('recordCreationTimeStamp', 'desc')
+      .get();
+  } catch (error) {
+    if (!isFirestoreMissingIndexError(error)) throw error;
 
-  const orgIds = [...new Set(snap.docs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
+    // Fallback path when the composite index is not created yet.
+    snap = await adminDb
+      .collection('reservation')
+      .where('reservationState', 'in', ['ACCEPTED', 'COMPLETED'])
+      .get();
+  }
+
+  const sortedDocs = [...snap.docs].sort((a, b) => {
+    const tsA = Number(a.data()['recordCreationTimeStamp'] ?? 0);
+    const tsB = Number(b.data()['recordCreationTimeStamp'] ?? 0);
+    return tsB - tsA;
+  });
+
+  const orgIds = [...new Set(sortedDocs.map((d) => d.data()['orgId'] as string).filter(Boolean))];
   const orgNames: Record<string, string> = {};
   await Promise.all(
     orgIds.map(async (orgId) => {
@@ -371,7 +1579,7 @@ export async function getRevenueRecords(): Promise<AdminRevenueRecord[]> {
     })
   );
 
-  return snap.docs.map((doc) => {
+  return sortedDocs.map((doc) => {
     const d = doc.data();
     const gross = (d['totalCost'] as number) ?? 0;
     const fee = Math.round(gross * PLATFORM_FEE_PCT * 100) / 100;
@@ -402,7 +1610,7 @@ export interface AdminMember {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'support';
+  role: 'super_admin' | 'admin' | 'support' | 'developer';
   photoURL?: string;
   /** ⚠️ lastActive: Not stored in Firestore */
   lastActive: string;
@@ -412,7 +1620,7 @@ export interface AdminMember {
 }
 
 export async function getAdminTeam(): Promise<AdminMember[]> {
-  const snap = await adminDb.collection('user').where('userRole', '==', 'Admin').get();
+  const snap = await adminDb.collection('user').where('userRole', 'in', ['Admin', 'Developer']).get();
 
   return snap.docs.map((doc) => {
     const d = doc.data();
@@ -420,11 +1628,17 @@ export async function getAdminTeam(): Promise<AdminMember[]> {
     const firstName = profile['firstName'] ?? '';
     const lastName = profile['lastName'] ?? '';
     const displayName = [firstName, lastName].filter(Boolean).join(' ') || (d['email'] as string);
+    const userRole = d['userRole'] as string | undefined;
+    const resolvedRole: AdminMember['role'] =
+      userRole === 'Developer'
+        ? 'developer'
+        : ((d['adminRole'] as AdminMember['role']) ?? 'admin');
+
     return {
       id: doc.id,
       name: displayName,
       email: (d['email'] as string) ?? '',
-      role: (d['adminRole'] as AdminMember['role']) ?? 'admin',
+      role: resolvedRole,
       photoURL: (d['photoURL'] as string | undefined) ?? undefined,
       lastActive: new Date().toISOString(), // ⚠️ Not stored
       status: 'active', // ⚠️ Not stored
@@ -444,6 +1658,7 @@ export interface OrgVenueRow {
   name: string;
   address: string;
   spaces: number;
+  createdAt: string;
   /** ⚠️ rating not stored; default 0 */
   rating: number;
   /** ⚠️ venue status not stored; default 'active' */
@@ -456,12 +1671,16 @@ export async function getVenuesByOrganizationId(orgId: string): Promise<OrgVenue
   return snap.docs.map((doc) => {
     const d = doc.data();
     const addressParts = [d['address'], d['city'], d['state']].filter(Boolean);
+    const createdAt = d['recordCreationTimeStamp']
+      ? new Date((d['recordCreationTimeStamp'] as number) * 1000).toISOString()
+      : new Date().toISOString();
 
     return {
       id: doc.id,
       name: (d['name'] as string) ?? 'Unnamed Venue',
       address: addressParts.join(', '),
       spaces: ((d['spaces'] as unknown[]) ?? []).length,
+      createdAt,
       rating: 0, // ⚠️ not in schema
       status: 'active' // ⚠️ not in schema
     };
@@ -478,6 +1697,7 @@ export interface OrgReservationRow {
   space: string;
   cost: string;
   dateTime: string;
+  createdAt: string;
   duration: string;
   status: 'active' | 'inactive';
   amountNumber: number;
@@ -533,6 +1753,7 @@ export async function getReservationsByOrganizationId(orgId: string): Promise<Or
       space,
       cost: formatMoneyUSD(amount),
       dateTime: formatDateTime(createdAt),
+      createdAt: createdAt.toISOString(),
       duration,
       status,
       amountNumber: amount
@@ -556,8 +1777,9 @@ export interface OrgMemberRow {
 // If you don't have a real activity log collection, we should return [] (real).
 export type OrgActivityRow = OrgMemberRow;
 
-export async function getOrganizationActivityById(orgId: string): Promise<OrgActivityRow[]> {
+export async function getOrganizationActivityById(_orgId: string): Promise<OrgActivityRow[]> {
   // No activity source in schema you shared — return empty list instead of dummy data.
+  void _orgId;
   return [];
 }
 

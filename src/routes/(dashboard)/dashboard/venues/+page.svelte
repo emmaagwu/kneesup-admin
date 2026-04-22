@@ -4,9 +4,22 @@
   import type { PageData } from './$types';
   import type { AdminVenue } from '$lib/server/db';
 
-  let { data }: { data: PageData } = $props();
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+    dryRunReport?: {
+      venues: number;
+      reservations: number;
+      guests: number;
+      detachedFromOrganization: number;
+      missing: number;
+    };
+  };
+
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   type VenueStatus = 'active' | 'inactive' | 'blocked';
+  type VenueSortBy = 'recent' | 'oldest' | 'name' | 'org' | 'spaces' | 'status';
 
   const summaryStats = $derived([
     { label: 'All Venues', value: data.venues.length,                                              change: 0, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
@@ -26,15 +39,85 @@
   let search      = $state('');
   let activeMenu  = $state<string | null>(null);
   let currentPage = $state(1);
+  let sortBy = $state<VenueSortBy>('recent');
+  let sortDir = $state<'asc' | 'desc'>('asc');
   const perPage   = 10;
+
+  function getRecencyValue(value: string) {
+    const timestamp = new Date(value).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
 
   let filtered   = $derived((data.venues as AdminVenue[]).filter((v: AdminVenue) =>
     v.name.toLowerCase().includes(search.toLowerCase()) ||
     v.orgName.toLowerCase().includes(search.toLowerCase()) ||
     v.address.toLowerCase().includes(search.toLowerCase())
   ));
-  let paginated  = $derived(filtered.slice((currentPage - 1) * perPage, currentPage * perPage));
-  let totalPages = $derived(Math.ceil(filtered.length / perPage));
+
+  let sorted = $derived.by(() => {
+    const rows = [...filtered];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      if (sortBy === 'recent') return getRecencyValue(b.createdAt) - getRecencyValue(a.createdAt);
+      if (sortBy === 'oldest') return getRecencyValue(a.createdAt) - getRecencyValue(b.createdAt);
+      if (sortBy === 'spaces') return (a.spacesCount - b.spacesCount) * dir;
+      if (sortBy === 'status') return a.status.localeCompare(b.status) * dir;
+      if (sortBy === 'org') return a.orgName.localeCompare(b.orgName) * dir;
+      return a.name.localeCompare(b.name) * dir;
+    });
+    return rows;
+  });
+
+  let paginated  = $derived(sorted.slice((currentPage - 1) * perPage, currentPage * perPage));
+  let totalPages = $derived(Math.max(1, Math.ceil(sorted.length / perPage)));
+
+  $effect(() => {
+    if (currentPage > totalPages) currentPage = totalPages;
+  });
+
+  let selectedVenueIds = $state<string[]>([]);
+  let allVisibleSelected = $derived(
+    paginated.length > 0 && paginated.every((venue) => selectedVenueIds.includes(venue.id))
+  );
+
+  function toggleVenueSelection(venueId: string, checked: boolean) {
+    if (checked) {
+      if (!selectedVenueIds.includes(venueId)) selectedVenueIds = [...selectedVenueIds, venueId];
+      return;
+    }
+    selectedVenueIds = selectedVenueIds.filter((id) => id !== venueId);
+  }
+
+  function toggleSelectAllVisible(checked: boolean) {
+    if (!checked) {
+      selectedVenueIds = selectedVenueIds.filter((id) => !paginated.some((venue) => venue.id === id));
+      return;
+    }
+    const merged = new Set([...selectedVenueIds, ...paginated.map((venue) => venue.id)]);
+    selectedVenueIds = Array.from(merged);
+  }
+
+  function selectAllFilteredResults() {
+    selectedVenueIds = Array.from(new Set([...selectedVenueIds, ...sorted.map((venue) => venue.id)]));
+  }
+
+  function selectAllDatabaseResults() {
+    selectedVenueIds = data.venues.map((venue) => venue.id);
+  }
+
+  function clearSelection() {
+    selectedVenueIds = [];
+  }
+
+  function confirmBulkDelete(event: SubmitEvent) {
+    if (selectedVenueIds.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    if (!confirm(`Delete ${selectedVenueIds.length} venue(s) and related reservations/guests? This cannot be undone.`)) {
+      event.preventDefault();
+    }
+  }
 
   function toggleMenu(id: string) { activeMenu = activeMenu === id ? null : id; }
   function closeMenu() { activeMenu = null; }
@@ -42,6 +125,8 @@
   // ── Drawer state ──────────────────────────────────────────────────
   let showDrawer  = $state(false);
   let drawerStep  = $state<1 | 2 | 3 | 4>(1);
+  let isSubmitting = $state(false);
+  let serverError = $state('');
 
   // Step 1 — Venue Details
   let venueName        = $state('');
@@ -52,11 +137,38 @@
   let venueCity        = $state('');
   let venueState       = $state('');
   let venueZip         = $state('');
+  let phoneNumber      = $state('');
+  let email            = $state('');
 
   // Step 2 — Photos
-  let venuePhotos      = $state<File[]>([]);
+  let primaryPhoto     = $state<string>(''); // Store as base64 string
   let photoPreviews    = $state<string[]>([]);
+  let venuePhotos      = $state<File[]>([]);
   let draggingPhotos   = $state(false);
+
+  // Convert File to JPEG base64 (like kneesup-venues)
+  async function fileToJpegBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('Failed to get canvas context')); return; }
+          ctx.drawImage(img, 0, 0);
+          // Convert to JPEG with quality 0.8
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   // Step 3 — Operating Hours
   type DayHours = { enabled: boolean; slots: { from: string; to: string }[] };
@@ -108,9 +220,11 @@
     showDrawer = true; drawerStep = 1;
     venueName = ''; venueDescription = ''; venueOrg = ''; venueCountry = '';
     venueAddress = ''; venueCity = ''; venueState = ''; venueZip = '';
-    venuePhotos = []; photoPreviews = [];
+    phoneNumber = ''; email = '';
+    venuePhotos = []; photoPreviews = []; primaryPhoto = '';
     layoutImage = null; layoutPreview = null; brochure = null; brochureName = null; additionalNotes = '';
     step1Errors = { venueName: '', venueOrg: '', venueCountry: '', venueAddress: '', venueCity: '', venueState: '', venueZip: '' };
+    serverError = '';
   }
   function closeDrawer() { showDrawer = false; }
 
@@ -138,21 +252,73 @@
     if (drawerStep < 4) drawerStep = (drawerStep + 1) as 1|2|3|4;
   }
 
-  function handleSubmit() {
-    closeDrawer();
-    clearTimeout(toastTimer);
-    showToast = true;
-    toastTimer = setTimeout(() => showToast = false, 5000);
+  async function handleSubmit() {
+    if (!validateStep1()) return;
+
+    isSubmitting = true;
+    serverError = '';
+
+    // Create FormData for submission
+    const formData = new FormData();
+    formData.append('venueName', venueName);
+    formData.append('venueDescription', venueDescription);
+    formData.append('venueOrg', venueOrg);
+    formData.append('venueCountry', venueCountry);
+    formData.append('venueAddress', venueAddress);
+    formData.append('venueCity', venueCity);
+    formData.append('venueState', venueState);
+    formData.append('venueZip', venueZip);
+    formData.append('phoneNumber', phoneNumber);
+    formData.append('email', email);
+    
+    // Add primary photo if available (as base64)
+    if (primaryPhoto) {
+      formData.append('photo', primaryPhoto);
+    }
+
+    try {
+      const response = await fetch('?/createVenue', {
+        method: 'POST',
+        headers: { accept: 'application/json' },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.type === 'success' || result.data?.success) {
+        closeDrawer();
+        clearTimeout(toastTimer);
+        showToast = true;
+        toastTimer = setTimeout(() => showToast = false, 5000);
+        
+        // Reload venues
+        window.location.reload();
+      } else {
+        serverError = result.data?.error || 'Failed to create venue';
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      serverError = 'An error occurred. Please try again.';
+    } finally {
+      isSubmitting = false;
+    }
   }
 
-  function handlePhotoFiles(files: FileList | null) {
+  async function handlePhotoFiles(files: FileList | null) {
     if (!files) return;
-    Array.from(files).forEach(file => {
-      venuePhotos = [...venuePhotos, file];
-      const reader = new FileReader();
-      reader.onload = (e) => { photoPreviews = [...photoPreviews, e.target?.result as string]; };
-      reader.readAsDataURL(file);
-    });
+    
+    // Only handle first file as primary photo (base64)
+    const file = files[0];
+    if (file) {
+      try {
+        venuePhotos = [...venuePhotos, file];
+        primaryPhoto = await fileToJpegBase64(file);
+        photoPreviews = [primaryPhoto];
+      } catch (error) {
+        console.error('Error converting photo:', error);
+        serverError = 'Failed to process image';
+      }
+    }
   }
 
   function handleLayoutFile(file: File) {
@@ -166,7 +332,7 @@
     brochure = file; brochureName = file.name;
   }
 
-  const organizations = $derived([...new Set((data.venues as AdminVenue[]).map(v => v.orgName))]);
+  const organizations = $derived(data.organizations ?? []);
   const countries = ['United States', 'United Kingdom', 'Nigeria', 'Canada', 'Australia'];
   const usStates = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
 </script>
@@ -238,6 +404,11 @@
 
     <!-- Drawer body -->
     <div class="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+      {#if serverError}
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
+          <p class="text-sm text-red-700">{serverError}</p>
+        </div>
+      {/if}
 
       <!-- ── STEP 1: Venue Details ── -->
       {#if drawerStep === 1}
@@ -276,7 +447,7 @@
                      {step1Errors.venueOrg ? 'border-red-400 bg-red-50' : 'border-[#e5e7eb]'}
                      focus:outline-none focus:ring-2 focus:ring-[#0d9488] bg-white text-[#374151]">
               <option value="" disabled selected>Select organization</option>
-              {#each organizations as org}<option value={org}>{org}</option>{/each}
+              {#each organizations as org}<option value={org.id}>{org.name}</option>{/each}
             </select>
             <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
@@ -582,19 +753,34 @@
 
     <!-- Drawer footer -->
     <div class="px-4 sm:px-6 py-4 border-t border-[#f0f0f0] flex items-center justify-end gap-4 shrink-0 bg-white">
-      <button onclick={closeDrawer}
-        class="text-sm font-semibold text-[#dc2626] underline underline-offset-2 hover:text-[#b91c1c] transition-colors">
+      <button 
+        onclick={closeDrawer}
+        disabled={isSubmitting}
+        class="text-sm font-semibold text-[#dc2626] underline underline-offset-2 
+              hover:text-[#b91c1c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
         Cancel
       </button>
       {#if drawerStep < 4}
-        <button onclick={handleContinue}
-          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold hover:bg-[#243647] transition-colors">
+        <button 
+          onclick={handleContinue}
+          disabled={isSubmitting}
+          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold 
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           Continue
         </button>
       {:else}
-        <button onclick={handleSubmit}
-          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold hover:bg-[#243647] transition-colors">
-          Submit
+        <button 
+          onclick={handleSubmit}
+          disabled={isSubmitting}
+          class="px-6 py-2.5 rounded-lg bg-[#1a2e3b] text-white text-sm font-semibold 
+                hover:bg-[#243647] transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                flex items-center gap-2">
+          {#if isSubmitting}
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          {/if}
+          {isSubmitting ? 'Creating...' : 'Submit'}
         </button>
       {/if}
     </div>
@@ -633,6 +819,22 @@
 />
 
 <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-5 max-w-[1400px]">
+
+  {#if form?.successMessage}
+    <div class="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+      {form.successMessage}
+    </div>
+  {/if}
+  {#if form?.errorMessage}
+    <div class="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+      {form.errorMessage}
+    </div>
+  {/if}
+  {#if form?.dryRunReport}
+    <div class="rounded-lg border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm text-[#1e3a8a]">
+      Dry run: {form.dryRunReport.venues} venue(s), {form.dryRunReport.reservations} reservation(s), {form.dryRunReport.guests} guest(s) and {form.dryRunReport.detachedFromOrganization} organization link(s) will be affected.{#if form.dryRunReport.missing} Missing venues: {form.dryRunReport.missing}.{/if}
+    </div>
+  {/if}
 
   <!-- Heading + CTA -->
   <div class="flex items-center justify-between gap-4">
@@ -686,6 +888,16 @@
                  placeholder:text-[#9ca3af] bg-white"/>
       </div>
       <div class="flex items-center gap-2 sm:ml-auto">
+        <button
+          class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors"
+          onclick={() => {
+            if (sortBy === 'recent') sortBy = 'oldest';
+            else if (sortBy === 'oldest') sortBy = 'recent';
+            else sortBy = 'recent';
+          }}
+        >
+          Sort by Recency ({sortBy === 'recent' ? 'Newest First' : 'Oldest First'})
+        </button>
         <button class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -701,11 +913,57 @@
       </div>
     </div>
 
+    {#if data.canDelete}
+      <div class="px-4 sm:px-5 py-3 border-b border-[#f0f0f0] bg-[#fcfcfc]">
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151]">
+            <input type="checkbox" checked={allVisibleSelected} onchange={(event) => toggleSelectAllVisible((event.target as HTMLInputElement).checked)} />
+            Select visible page ({paginated.length})
+          </label>
+          <button type="button" onclick={selectAllFilteredResults}
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+            Select all filtered ({sorted.length})
+          </button>
+          <button type="button" onclick={selectAllDatabaseResults}
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+            Select all venues ({data.venues.length})
+          </button>
+          <button type="button" onclick={clearSelection}
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f9fafb] transition-colors">
+            Clear
+          </button>
+          <form method="POST" action="?/deleteSelectedVenues" onsubmit={confirmBulkDelete}>
+            {#each selectedVenueIds as venueId}
+              <input type="hidden" name="venueIds" value={venueId} />
+            {/each}
+            <button
+              type="submit"
+              formaction="?/previewSelectedVenues"
+              class="mr-2 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#bfdbfe] text-[#1d4ed8] hover:bg-[#eff6ff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={selectedVenueIds.length === 0}
+            >
+              Dry run ({selectedVenueIds.length})
+            </button>
+            <button
+              type="submit"
+              disabled={selectedVenueIds.length === 0}
+              class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Delete selected ({selectedVenueIds.length})
+            </button>
+          </form>
+        </div>
+      </div>
+    {/if}
+
     <!-- Desktop table -->
     <div class="hidden sm:block overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr class="bg-[#fafafa] border-b border-[#f0f0f0]">
+            {#if data.canDelete}
+              <th class="text-left px-5 py-3 text-xs font-semibold text-[#6b7280]">Select</th>
+            {/if}
             <th class="text-left px-5 py-3 text-xs font-semibold text-[#6b7280]">Name</th>
             <th class="text-left px-4 py-3 text-xs font-semibold text-[#6b7280]">Organization</th>
             <th class="text-left px-4 py-3 text-xs font-semibold text-[#6b7280]">Address</th>
@@ -718,6 +976,15 @@
         <tbody class="divide-y divide-[#f9fafb]">
           {#each paginated as venue}
             <tr class="hover:bg-[#fafafa] transition-colors">
+              {#if data.canDelete}
+                <td class="px-5 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedVenueIds.includes(venue.id)}
+                    onchange={(event) => toggleVenueSelection(venue.id, (event.target as HTMLInputElement).checked)}
+                  />
+                </td>
+              {/if}
               <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">
                 <a href="/dashboard/venues/{venue.id}"
                    class="hover:text-[#0d9488] transition-colors">{venue.name}</a>
@@ -750,7 +1017,7 @@
                       </svg>
                       View Details
                     </button>
-                    <button onclick={() => { goto(`/dashboard/venues/${venue.id}/edit`); closeMenu(); }}
+                    <button onclick={() => { goto(`/dashboard/venues/${venue.id}?edit=true`); closeMenu(); }}
                       class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors text-left">
                       <svg class="w-4 h-4 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -778,14 +1045,26 @@
     <div class="sm:hidden divide-y divide-[#f9fafb]">
       {#each paginated as venue}
         <div class="px-4 py-4 relative">
+          {#if data.canDelete}
+            <div class="mb-2">
+              <label class="inline-flex items-center gap-2 text-xs text-[#6b7280]">
+                <input
+                  type="checkbox"
+                  checked={selectedVenueIds.includes(venue.id)}
+                  onchange={(event) => toggleVenueSelection(venue.id, (event.target as HTMLInputElement).checked)}
+                />
+                Select
+              </label>
+            </div>
+          {/if}
           <a href="/dashboard/venues/{venue.id}" class="block">
             <div class="pr-8">
               <p class="text-sm font-semibold text-[#111827]">{venue.name}</p>
-              <p class="text-xs text-[#6b7280] mt-0.5">{venue.organization}</p>
+              <p class="text-xs text-[#6b7280] mt-0.5">{venue.orgName}</p>
               <p class="text-xs text-[#9ca3af] mt-0.5 truncate">{venue.address}</p>
               <div class="flex items-center gap-3 mt-2">
                 <span class="text-xs text-[#374151]">⭐ {venue.rating}</span>
-                <span class="text-xs text-[#9ca3af]">{venue.spaces} spaces</span>
+                <span class="text-xs text-[#9ca3af]">{venue.spacesCount} spaces</span>
                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full {statusColors[venue.status]}">
                   {venue.status.charAt(0).toUpperCase() + venue.status.slice(1)}
                 </span>
@@ -809,7 +1088,7 @@
                   </svg>
                   View Details
                 </button>
-                <button onclick={() => { goto(`/dashboard/venues/${venue.id}/edit`); closeMenu(); }}
+                <button onclick={() => { goto(`/dashboard/venues/${venue.id}?edit=true`); closeMenu(); }}
                   class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#374151] hover:bg-[#f9fafb] transition-colors text-left">
                   <svg class="w-4 h-4 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -834,7 +1113,7 @@
     <!-- Pagination -->
     <div class="px-4 sm:px-5 py-4 border-t border-[#f0f0f0] flex items-center justify-between gap-4">
       <p class="text-xs text-[#6b7280]">
-        Showing {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, filtered.length)} of {filtered.length}
+        Showing {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, sorted.length)} of {sorted.length}
       </p>
       <div class="flex items-center gap-1">
         <button onclick={() => currentPage = Math.max(1, currentPage - 1)} disabled={currentPage === 1}

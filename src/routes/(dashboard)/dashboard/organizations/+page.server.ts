@@ -1,7 +1,124 @@
 import type { PageServerLoad } from './$types';
-import { getAllOrganizations } from '$lib/server/db';
+import type { Actions } from './$types';
+import { fail } from '@sveltejs/kit';
+import { createOrganization, deleteOrganizationsCascade, getAllOrganizations, previewDeleteOrganizationsCascade } from '$lib/server/db';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
   const organizations = await getAllOrganizations();
-  return { organizations };
+  return { organizations, canDelete: locals.user?.role === 'developer' };
+};
+
+export const actions: Actions = {
+  createOrg: async ({ request, locals }) => {
+    if (!locals.user) {
+      return fail(401, { errorMessage: 'You must be signed in to create organizations.' });
+    }
+
+    const formData = await request.formData();
+    const name = String(formData.get('orgName') ?? '').trim();
+    const ownerName = String(formData.get('contactName') ?? '').trim();
+    const ownerEmail = String(formData.get('contactEmail') ?? '').trim();
+    const ownerTitle = String(formData.get('contactTitle') ?? '').trim();
+    const logoURL = String(formData.get('logo') ?? '').trim();
+
+    const errors: Record<string, string> = {};
+    if (!name) errors.name = 'Organization name is required';
+    if (!ownerName) errors.ownerName = 'Contact name is required';
+    if (!ownerEmail) {
+      errors.ownerEmail = 'Contact email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) {
+      errors.ownerEmail = 'Enter a valid email address';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return fail(400, { errorMessage: Object.values(errors)[0], errors });
+    }
+
+    const organizationId = await createOrganization({
+      name,
+      ownerName,
+      ownerEmail,
+      ownerTitle: ownerTitle || 'Owner',
+      logoURL
+    });
+
+    return {
+      successMessage: 'Organization created successfully.',
+      organizationId
+    };
+  },
+
+  previewSelectedOrgs: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can preview deletion impact.' });
+    }
+
+    const formData = await request.formData();
+    const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
+    if (orgIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one organization to preview.' });
+    }
+
+    const results = await previewDeleteOrganizationsCascade(orgIds);
+    const existing = results.filter((result) => result.organizationExists);
+    const missing = results.length - existing.length;
+
+    return {
+      successMessage: `Dry run complete for ${results.length} organization(s).`,
+      dryRunReport: {
+        organizations: existing.length,
+        venues: existing.reduce((sum, result) => sum + result.venues, 0),
+        reservations: existing.reduce((sum, result) => sum + result.reservations, 0),
+        guests: existing.reduce((sum, result) => sum + result.guests, 0),
+        detachedUsers: existing.reduce((sum, result) => sum + result.usersToDetach, 0),
+        missing
+      }
+    };
+  },
+
+  deleteOneOrg: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete organizations.' });
+    }
+
+    const formData = await request.formData();
+    const orgId = String(formData.get('orgId') ?? '').trim();
+    if (!orgId) {
+      return fail(400, { errorMessage: 'Organization id is required.' });
+    }
+
+    const results = await deleteOrganizationsCascade([orgId]);
+    const result = results[0];
+    if (!result?.deletedOrganization) {
+      return fail(404, { errorMessage: 'Organization not found or already removed.' });
+    }
+
+    return {
+      successMessage: `Deleted 1 organization with ${result.deletedVenues} venues, ${result.deletedReservations} reservations, and ${result.deletedGuests} guests.`
+    };
+  },
+
+  deleteSelectedOrgs: async ({ request, locals }) => {
+    if (locals.user?.role !== 'developer') {
+      return fail(403, { errorMessage: 'Only Developer role can delete organizations.' });
+    }
+
+    const formData = await request.formData();
+    const orgIds = formData.getAll('organizationIds').map((value) => String(value).trim()).filter(Boolean);
+    if (orgIds.length === 0) {
+      return fail(400, { errorMessage: 'Select at least one organization to delete.' });
+    }
+
+    const results = await deleteOrganizationsCascade(orgIds);
+    const deletedOrgs = results.filter((result) => result.deletedOrganization);
+    const skippedOrgs = results.length - deletedOrgs.length;
+
+    const totalVenues = deletedOrgs.reduce((sum, result) => sum + result.deletedVenues, 0);
+    const totalReservations = deletedOrgs.reduce((sum, result) => sum + result.deletedReservations, 0);
+    const totalGuests = deletedOrgs.reduce((sum, result) => sum + result.deletedGuests, 0);
+
+    return {
+      successMessage: `Deleted ${deletedOrgs.length} organization(s), ${totalVenues} venue(s), ${totalReservations} reservation(s), ${totalGuests} guest record(s).${skippedOrgs ? ` Skipped ${skippedOrgs} missing organization(s).` : ''}`
+    };
+  }
 };

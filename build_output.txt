@@ -1,0 +1,2416 @@
+
+> kneesup-admin@0.0.1 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding ssr environment for production...[36m[39m
+transforming...
+8:42:49 AM [vite-plugin-svelte] src/routes/(auth)/+layout.svelte:1:0 Using `<slot>` to render parent content is deprecated. Use `{@render ...}` tags instead
+https://svelte.dev/e/slot_element_deprecated
+1: <slot />
+           ^
+8:42:49 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:169:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+167:         <!-- Email -->
+168:         <div>
+169:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Email Address *</label>
+                                                                                                     ^
+170:           <input 
+171:             type="email" 
+8:42:49 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:181:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+179:         <!-- First Name -->
+180:         <div>
+181:           <label class="block text-sm font-medium text-[#374151] mb-1.5">First Name</label>
+                                                                                                ^
+182:           <input 
+183:             type="text" 
+8:42:49 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:193:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+191:         <!-- Last Name -->
+192:         <div>
+193:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Last Name</label>
+                                                                                               ^
+194:           <input 
+195:             type="text" 
+8:42:49 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:205:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+203:         <!-- Role -->
+204:         <div>
+205:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Role *</label>
+                                                                                            ^
+206:           <select 
+207:             bind:value={role}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:200:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+198: <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+199: {#if activeMenu}
+200:   <div class="fixed inset-0 z-20" onclick={closeMenu}></div>
+                                                                 ^
+201: {/if}
+202: 
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:207:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+205:   <!-- Blurred backdrop -->
+206:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+207:   <div
+            ^
+208:     class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]"
+209:     onclick={closeDrawer}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:213:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+211: 
+212:   <!-- Drawer panel — full screen on mobile, detached with margin on desktop -->
+213:   <div
+            ^
+214:     class="
+215:       fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:213:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+211: 
+212:   <!-- Drawer panel — full screen on mobile, detached with margin on desktop -->
+213:   <div
+            ^
+214:     class="
+215:       fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:229:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+227:         <span class="text-[#111827] font-medium">New Organization</span>
+228:       </nav>
+229:       <button
+                   ^
+230:         onclick={closeDrawer}
+231:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:289:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+287:           <!-- Org name -->
+288:           <div class="mb-4">
+289:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+290:               Name <span class="text-red-500">*</span>
+291:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:308:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+306:           <!-- Photo upload -->
+307:           <div>
+308:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+309:               Upload Profile Photo
+310:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:314:12 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+312:             <!-- Drop zone -->
+313:             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+314:             <div
+                      ^
+315:               class="relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+316:                      {dragging ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:361:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+359:           <!-- Contact name -->
+360:           <div class="mb-4">
+361:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+362:               Name <span class="text-red-500">*</span>
+363:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:380:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+378:           <!-- Title/Position -->
+379:           <div class="mb-4">
+380:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+381:               Title/Position
+382:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:395:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+393:           <!-- Email -->
+394:           <div class="mb-4">
+395:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+396:               Email Address <span class="text-red-500">*</span>
+397:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:472:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+470:         </p>
+471:       </div>
+472:       <button
+                   ^
+473:         onclick={() => showToast = false}
+474:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:594:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+592:               </td>
+593:               <td class="px-4 py-4 relative">
+594:                 <button
+                             ^
+595:                   onclick={() => toggleMenu(org.id)}
+596:                   class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af]
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:659:12 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+657:           </a>
+658:           <div class="absolute right-4 top-4">
+659:             <button
+                         ^
+660:               onclick={() => toggleMenu(org.id)}
+661:               class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:705:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+703:       </p>
+704:       <div class="flex items-center gap-1">
+705:         <button
+                     ^
+706:           onclick={() => currentPage = Math.max(1, currentPage - 1)}
+707:           disabled={currentPage === 1}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:724:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+722:           </button>
+723:         {/each}
+724:         <button
+                     ^
+725:           onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+726:           disabled={currentPage === totalPages}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:113:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+111: {#if showBlockModal}
+112:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+113:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+114:        onclick={() => showBlockModal = false}>
+115:     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:116:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+114:        onclick={() => showBlockModal = false}>
+115:     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+116:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+117:          onclick={(e) => e.stopPropagation()}>
+118:       <button onclick={() => showBlockModal = false}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:118:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+116:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+117:          onclick={(e) => e.stopPropagation()}>
+118:       <button onclick={() => showBlockModal = false}
+                    ^
+119:               class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+120:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:322:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+320:                 </td>
+321:                 <td class="px-4 py-4">
+322:                   <button class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+                                ^
+323:                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+324:                       <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:337:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+335:         <p class="text-xs text-[#6b7280]">Showing 1-{org.venues.length} of {org.venueCount}</p>
+336:         <div class="flex items-center gap-1">
+337:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+                        ^
+338:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+339:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:341:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+339:           </button>
+340:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+341:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+                        ^
+342:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+343:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:390:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+388:         <p class="text-xs text-[#6b7280]">Showing 1-{org.reservations.length} of {org.reservationCount}</p>
+389:         <div class="flex items-center gap-1">
+390:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+                        ^
+391:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+392:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:394:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+392:           </button>
+393:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+394:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+                        ^
+395:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+396:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:437:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+435:         <p class="text-xs text-[#6b7280]">Showing 1-{org.team.length} of {org.team.length}</p>
+436:         <div class="flex items-center gap-1">
+437:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+438:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+439:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:441:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+439:           </button>
+440:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+441:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+442:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+443:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:484:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+482:         <p class="text-xs text-[#6b7280]">Showing 1-{org.activity.length} of {org.activity.length}</p>
+483:         <div class="flex items-center gap-1">
+484:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+485:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+486:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:488:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+486:           </button>
+487:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+488:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+489:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+490:           </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:44:23 This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally
+42:   ]);
+43: 
+44:   const reservations = data.reservations;
+                               ^
+45: 
+46:   const getStatusVariant = (status: string) => {
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:193:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+191:     <p class="text-sm text-[#9ca3af]">Showing 1-10 of 70</p>
+192:     <div class="flex items-center gap-2">
+193:       <button class="p-2 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] transition-colors" disabled>
+                    ^
+194:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+195:           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:199:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+197:       </button>
+198:       <button class="w-8 h-8 rounded-lg bg-[#0d9488] text-white text-xs font-semibold">1</button>
+199:       <button class="w-8 h-8 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] text-xs font-semibold transition-colors">
+                    ^
+200:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+201:           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:261:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+259: <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+260: {#if activeMenu}
+261:   <div class="fixed inset-0 z-20" onclick={closeMenu}></div>
+                                                                 ^
+262: {/if}
+263: 
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:267:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+265: {#if showDrawer}
+266:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+                                                                                                     ^
+268: 
+269:   <div
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:269:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+268: 
+269:   <div
+            ^
+270:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+271:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[520px] sm:rounded-2xl"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:269:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+268: 
+269:   <div
+            ^
+270:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+271:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[520px] sm:rounded-2xl"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:281:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+279:         <span class="text-[#111827] font-medium">New Venue</span>
+280:       </nav>
+281:       <button
+                   ^
+282:         onclick={closeDrawer}
+283:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:333:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+331:         <!-- Name -->
+332:         <div class="mb-4">
+333:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+334:             Name <span class="text-red-500">*</span>
+335:           </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:345:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+343:         <!-- Description -->
+344:         <div class="mb-4">
+345:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+346:             Description <span class="text-red-500">*</span>
+347:           </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:348:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+346:             Description <span class="text-red-500">*</span>
+347:           </label>
+348:           <textarea bind:value={venueDescription} placeholder="Enter venue description" rows="4"
+                                                                                                      ^
+349:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+350:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:355:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+353:         <!-- Organization -->
+354:         <div class="mb-4">
+355:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+356:             Organization <span class="text-red-500">*</span>
+357:           </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:375:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+373:         <!-- Country -->
+374:         <div class="mb-4">
+375:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+376:             Country <span class="text-red-500">*</span>
+377:           </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:395:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+393:         <!-- Address -->
+394:         <div class="mb-4">
+395:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+396:             Address <span class="text-red-500">*</span>
+397:           </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:408:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+406:         <div class="grid grid-cols-3 gap-3">
+407:           <div>
+408:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+409:               City <span class="text-red-500">*</span>
+410:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:418:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+416:           </div>
+417:           <div>
+418:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+419:               State <span class="text-red-500">*</span>
+420:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:436:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+434:           </div>
+435:           <div>
+436:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+437:               Zip Code <span class="text-red-500">*</span>
+438:             </label>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:452:8 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+450: 
+451:         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+452:         <div
+                  ^
+453:           class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+454:                  {draggingPhotos ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:481:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+479:               <div class="relative rounded-lg overflow-hidden aspect-square">
+480:                 <img src={preview} alt="Photo {i+1}" class="w-full h-full object-cover"/>
+481:                 <button
+                             ^
+482:                   onclick={() => { photoPreviews = photoPreviews.filter((_,idx) => idx !== i); venuePhotos = venuePhotos.filter((_,idx) => idx !== i); }}
+483:                   class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:508:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+506:                   <span class="text-sm font-medium text-[#374151] w-20">{day}</span>
+507:                   <!-- Toggle switch -->
+508:                   <button
+                               ^
+509:                     type="button"
+510:                     onclick={() => toggleDay(day)}
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:514:20 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+512:                            {hours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}"
+513:                   >
+514:                     <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                 ^
+515:                                  {hours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+516:                   </button>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:556:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+554:                       <!-- Remove slot -->
+555:                       {#if hours[day].slots.length > 1}
+556:                         <button onclick={() => removeSlot(day, i)}
+                                      ^
+557:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors">
+558:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:566:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+564:                       <!-- Add slot (on last slot) -->
+565:                       {#if i === hours[day].slots.length - 1}
+566:                         <button onclick={() => addSlot(day)}
+                                      ^
+567:                           class="w-6 h-6 rounded-md border border-[#e5e7eb] flex items-center justify-center
+568:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:588:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+586:         <!-- Layout Image -->
+587:         <div class="mb-5">
+588:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+                                                                                                ^
+589:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+590:           <div
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:590:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+588:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+589:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+590:           <div
+                    ^
+591:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+592:                    {draggingLayout ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:622:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+620:         <!-- Venue Brochure -->
+621:         <div class="mb-5">
+622:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+                                                                                                  ^
+623:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+624:           <div
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:624:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+622:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+623:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+624:           <div
+                    ^
+625:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+626:                    {draggingBrochure ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:660:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+658:         <!-- Additional Notes -->
+659:         <div>
+660:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+                                                                                                    ^
+661:           <textarea bind:value={additionalNotes} placeholder="Additional notes" rows="4"
+662:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:661:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+659:         <div>
+660:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+661:           <textarea bind:value={additionalNotes} placeholder="Additional notes" rows="4"
+                                                                                              ^
+662:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+663:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:721:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+719:         </p>
+720:       </div>
+721:       <button onclick={() => showToast = false}
+                    ^
+722:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5">
+723:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:835:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+833:               </td>
+834:               <td class="px-4 py-4 relative">
+835:                 <button onclick={() => toggleMenu(venue.id)}
+                              ^
+836:                   class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af]
+837:                          hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:896:12 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+894:           </a>
+895:           <div class="absolute right-4 top-4">
+896:             <button onclick={() => toggleMenu(venue.id)}
+                          ^
+897:               class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+898:               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:940:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+938:       </p>
+939:       <div class="flex items-center gap-1">
+940:         <button onclick={() => currentPage = Math.max(1, currentPage - 1)} disabled={currentPage === 1}
+                      ^
+941:           class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#e5e7eb]
+942:                  text-[#374151] hover:bg-[#f9fafb] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+8:42:50 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:954:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+952:           </button>
+953:         {/each}
+954:         <button onclick={() => currentPage = Math.min(totalPages, currentPage + 1)} disabled={currentPage === totalPages}
+                      ^
+955:           class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white
+956:                  hover:bg-[#243647] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:274:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+272: {#if showBlockModal}
+273:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+274:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+275:        onclick={() => showBlockModal = false}>
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:276:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+274:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+275:        onclick={() => showBlockModal = false}>
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+277:          onclick={(e) => e.stopPropagation()}>
+278:       <button onclick={() => showBlockModal = false}
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:278:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+277:          onclick={(e) => e.stopPropagation()}>
+278:       <button onclick={() => showBlockModal = false}
+                    ^
+279:         class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+280:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:312:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+310: {#if activeSpaceMenu}
+311:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+312:   <div class="fixed inset-0 z-20" onclick={() => activeSpaceMenu = null}></div>
+                                                                                    ^
+313: {/if}
+314: 
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:332:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+330:         </p>
+331:       </div>
+332:       <button onclick={() => showSpaceToast = false}
+                    ^
+333:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5">
+334:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:345:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+343: {#if showSpaceDrawer}
+344:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+                                                                                                          ^
+346: 
+347:   <div
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:347:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+346: 
+347:   <div
+            ^
+348:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+349:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[380px] sm:rounded-2xl"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:347:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+346: 
+347:   <div
+            ^
+348:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+349:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[380px] sm:rounded-2xl"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:357:8 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+355:         <a href="/dashboard/venues" class="hover:text-[#374151] transition-colors shrink-0">Venue</a>
+356:         <span class="shrink-0">/</span>
+357:         <span class="hover:text-[#374151] cursor-pointer shrink-0" onclick={closeSpaceDrawer}>Venue Details</span>
+                                                                                                                       ^
+358:         <span class="shrink-0">/</span>
+359:         <span class="shrink-0 truncate max-w-[80px]">{venue.name}</span>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:357:8 `<span>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+355:         <a href="/dashboard/venues" class="hover:text-[#374151] transition-colors shrink-0">Venue</a>
+356:         <span class="shrink-0">/</span>
+357:         <span class="hover:text-[#374151] cursor-pointer shrink-0" onclick={closeSpaceDrawer}>Venue Details</span>
+                                                                                                                       ^
+358:         <span class="shrink-0">/</span>
+359:         <span class="shrink-0 truncate max-w-[80px]">{venue.name}</span>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:363:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+361:         <span class="text-[#111827] font-medium shrink-0">New Space</span>
+362:       </nav>
+363:       <button onclick={closeSpaceDrawer}
+                    ^
+364:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+365:                hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors shrink-0 ml-2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:407:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+405: 
+406:         <div class="mb-4">
+407:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+408:             Name <span class="text-red-500">*</span>
+409:           </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:418:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+416: 
+417:         <div class="mb-4">
+418:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+419:             Description <span class="text-red-500">*</span>
+420:           </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:421:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+419:             Description <span class="text-red-500">*</span>
+420:           </label>
+421:           <textarea bind:value={spaceDescription} placeholder="Enter space description" rows="4"
+                                                                                                      ^
+422:             class="w-full px-4 py-2.5 text-sm rounded-lg border resize-none
+423:                    {step1SpaceErrors.spaceDescription ? 'border-red-400 bg-red-50' : 'border-[#e5e7eb]'}
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:429:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+427: 
+428:         <div class="mb-4">
+429:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+430:             No. of Guest <span class="text-red-500">*</span>
+431:           </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:444:8 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+442: 
+443:         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+444:         <div
+                  ^
+445:           class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+446:                  {draggingSpacePhotos ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:473:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+471:               <div class="relative rounded-lg overflow-hidden aspect-square">
+472:                 <img src={preview} alt="Photo {i+1}" class="w-full h-full object-cover"/>
+473:                 <button
+                             ^
+474:                   onclick={() => { spacePhotoPreviews = spacePhotoPreviews.filter((_,idx) => idx !== i); spacePhotos = spacePhotos.filter((_,idx) => idx !== i); }}
+475:                   class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:509:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+507:                 class="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] bg-[#f9fafb]
+508:                        focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+509:               <button onclick={() => removeRule(i)}
+                            ^
+510:                 class="text-[#9ca3af] hover:text-[#dc2626] transition-colors p-1 shrink-0">
+511:                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:545:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+543:                          bg-white text-xs font-medium text-[#374151]">
+544:               {amenity}
+545:               <button onclick={() => removeAmenity(amenity)}
+                            ^
+546:                 class="text-[#9ca3af] hover:text-[#374151] transition-colors">
+547:                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:605:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+603:             <div class="p-4 space-y-4">
+604:               <div>
+605:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+606:                   Hourly Rate <span class="text-red-500">*</span>
+607:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:620:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+618:               </div>
+619:               <div>
+620:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+621:                   What's included? <span class="text-red-500">*</span>
+622:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:623:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+621:                   What's included? <span class="text-red-500">*</span>
+622:                 </label>
+623:                 <textarea bind:value={whatsIncluded} placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                                ^
+624:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+625:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:628:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+626:               </div>
+627:               <div>
+628:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+629:                   Minimum Booking Hours <span class="text-red-500">*</span>
+630:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:647:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+645:             <div class="p-4 space-y-4">
+646:               <div>
+647:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+648:                   Price per Guest <span class="text-red-500">*</span>
+649:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:662:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+660:               </div>
+661:               <div>
+662:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+663:                   What's included? <span class="text-red-500">*</span>
+664:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:665:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+663:                   What's included? <span class="text-red-500">*</span>
+664:                 </label>
+665:                 <textarea placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                  ^
+666:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+667:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:671:18 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+669:               <div class="grid grid-cols-2 gap-3">
+670:                 <div>
+671:                   <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                               ^
+672:                     Minimum Guest <span class="text-red-500">*</span>
+673:                   </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:679:18 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+677:                 </div>
+678:                 <div>
+679:                   <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                               ^
+680:                     Maximum Guest <span class="text-red-500">*</span>
+681:                   </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:699:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+697:             <div class="p-4 space-y-4">
+698:               <div>
+699:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+700:                   Venue Fee <span class="text-red-500">*</span>
+701:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:714:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+712:               </div>
+713:               <div>
+714:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+715:                   What's included? <span class="text-red-500">*</span>
+716:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:717:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+715:                   What's included? <span class="text-red-500">*</span>
+716:                 </label>
+717:                 <textarea placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                  ^
+718:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+719:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:743:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+741:               </div>
+742:               <div>
+743:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+744:                   Message for Guests <span class="text-red-500">*</span>
+745:                 </label>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:746:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+744:                   Message for Guests <span class="text-red-500">*</span>
+745:                 </label>
+746:                 <textarea placeholder="Explain why guests should contact your for pricing..." rows="4"
+                                                                                                            ^
+747:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+748:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:818:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+816:               <div class="flex items-center gap-3">
+817:                 <span class="text-sm font-medium text-[#374151] w-24 shrink-0">{day}</span>
+818:                 <button type="button" onclick={() => toggleSpaceDay(day)}
+                              ^
+819:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+820:                          {spaceHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:821:18 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+819:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+820:                          {spaceHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+821:                   <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                    ^
+822:                                {spaceHours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+823:                 </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:855:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+853:                       </div>
+854:                       {#if spaceHours[day].slots.length > 1}
+855:                         <button onclick={() => removeSpaceSlot(day, i)}
+                                      ^
+856:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors">
+857:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:863:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+861:                       {/if}
+862:                       {#if i === spaceHours[day].slots.length - 1}
+863:                         <button onclick={() => addSpaceSlot(day)}
+                                      ^
+864:                           class="w-6 h-6 rounded-md border border-[#e5e7eb] flex items-center justify-center
+865:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:885:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+883:         <!-- Layout Image -->
+884:         <div class="mb-5">
+885:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+                                                                                                ^
+886:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+887:           <div
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:887:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+885:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+886:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+887:           <div
+                    ^
+888:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+889:                    {draggingSpaceLayout ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:919:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+917:         <!-- Venue Brochure -->
+918:         <div class="mb-5">
+919:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+                                                                                                  ^
+920:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+921:           <div
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:921:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+919:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+920:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+921:           <div
+                    ^
+922:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+923:                    {draggingSpaceBrochure ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:957:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+955:         <!-- Additional Notes -->
+956:         <div>
+957:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+                                                                                                    ^
+958:           <textarea bind:value={spaceNotes} placeholder="Additional notes" rows="4"
+959:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:958:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+956:         <div>
+957:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+958:           <textarea bind:value={spaceNotes} placeholder="Additional notes" rows="4"
+                                                                                         ^
+959:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+960:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1163:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1161:                 </td>
+1162:                 <td class="px-4 py-4 relative" onclick={(e) => e.stopPropagation()}>
+1163:                   <button onclick={() => activeSpaceMenu = activeSpaceMenu === space.id ? null : space.id}
+                                 ^
+1164:                     class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+1165:                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1224:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1222:             </a>
+1223:             <div class="absolute right-4 top-4">
+1224:               <button onclick={() => activeSpaceMenu = activeSpaceMenu === space.id ? null : space.id}
+                             ^
+1225:                 class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+1226:                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1239:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1237:         <p class="text-xs text-[#6b7280]">Showing 1-{venue.spaces.length} of {venue.spaceCount}</p>
+1238:         <div class="flex items-center gap-1">
+1239:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                         ^
+1240:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+1241:           </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1243:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1241:           </button>
+1242:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+1243:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647] transition-colors">
+                         ^
+1244:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+1245:           </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1310:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1308:         <p class="text-xs text-[#6b7280]">Showing 1-{venue.reservations.length} of {venue.reservationCount}</p>
+1309:         <div class="flex items-center gap-1">
+1310:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                         ^
+1311:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+1312:           </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1314:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1312:           </button>
+1313:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+1314:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647] transition-colors">
+                         ^
+1315:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+1316:           </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:153:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+151: {#if lightboxSrc}
+152:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+153:   <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+             ^
+154:        onclick={() => lightboxSrc = null}>
+155:     <img src={lightboxSrc} alt="Gallery" class="max-w-full max-h-[90vh] rounded-xl object-contain"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:156:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+154:        onclick={() => lightboxSrc = null}>
+155:     <img src={lightboxSrc} alt="Gallery" class="max-w-full max-h-[90vh] rounded-xl object-contain"/>
+156:     <button onclick={() => lightboxSrc = null}
+                  ^
+157:       class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+158:       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:168:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+166: {#if showBlockModal}
+167:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+168:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+169:        onclick={() => showBlockModal = false}>
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:170:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+168:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+169:        onclick={() => showBlockModal = false}>
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+171:          onclick={(e) => e.stopPropagation()}>
+172:       <button onclick={() => showBlockModal = false}
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:172:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+171:          onclick={(e) => e.stopPropagation()}>
+172:       <button onclick={() => showBlockModal = false}
+                    ^
+173:         class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+174:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:219:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+217:       <div class="flex items-center gap-4 min-w-0">
+218:         <!-- Back button -->
+219:         <button onclick={() => goto(`/dashboard/venues/${venueId}`)}
+                      ^
+220:           class="w-10 h-10 rounded-full border border-[#e5e7eb] flex items-center justify-center
+221:                  text-[#6b7280] hover:bg-[#f9fafb] transition-colors shrink-0">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:278:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+276:       <div class="flex items-center justify-between mb-4">
+277:         <p class="text-[10px] font-bold tracking-widest uppercase text-[#9ca3af]">Amenities</p>
+278:         <button class="text-[#6b7280] hover:text-[#374151] transition-colors">
+                      ^
+279:           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+280:             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:299:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+297:       <div class="flex items-center justify-between mb-4">
+298:         <p class="text-[10px] font-bold tracking-widest uppercase text-[#9ca3af]">Pricing</p>
+299:         <button class="text-[#6b7280] hover:text-[#374151] transition-colors">
+                      ^
+300:           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+301:             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:352:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+350:               <div class="flex items-center gap-4">
+351:                 <span class="text-sm font-medium text-[#374151] w-24 shrink-0">{day}</span>
+352:                 <button type="button" onclick={() => toggleDay(day)}
+                              ^
+353:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+354:                          {editableHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:355:18 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+353:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+354:                          {editableHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+355:                   <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                       ^
+356:                                {editableHours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+357:                 </button>
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:385:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+383:                       </div>
+384:                       {#if editableHours[day].slots.length > 1}
+385:                         <button onclick={() => removeSlot(day, i)}
+                                      ^
+386:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors p-0.5">
+387:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:393:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+391:                       {/if}
+392:                       {#if i === editableHours[day].slots.length - 1}
+393:                         <button onclick={() => addSlot(day)}
+                                      ^
+394:                           class="w-7 h-7 rounded-md border border-[#e5e7eb] flex items-center justify-center
+395:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:42:51 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:452:12 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+450:           {#each space.gallery as img, i}
+451:             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+452:             <div
+                      ^
+453:               class="rounded-xl overflow-hidden aspect-[4/3] bg-[#f3f4f6] cursor-pointer
+454:                      hover:opacity-90 transition-opacity"
+8:42:51 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:67:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+65:   {:else}
+66:     <div class="py-3 flex justify-center">
+67:       <button class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+                   ^
+68:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+69:           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+8:42:51 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:97:14 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+ 95:           >
+ 96:             <span class="shrink-0 {isActive(item.href) ? 'text-white' : 'text-[#6b7280]'}">
+ 97:               <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                       ^
+ 98:             </span>
+ 99:             {#if open}
+8:42:51 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:129:14 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+127:           >
+128:             <span class="shrink-0 {isActive(item.href) ? 'text-white' : 'text-[#6b7280]'}">
+129:               <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                       ^
+130:             </span>
+131:             {#if open}
+8:42:51 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:151:12 Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated
+149:           </div>
+150:           <button
+151:             on:click={handleLogout}
+                                        ^
+152:             class="text-[#9ca3af] hover:text-[#374151] transition-colors p-1 rounded"
+153:             title="Logout"
+8:42:51 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:163:18 Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated
+161:         <!-- Collapsed: just avatar centered -->
+162:         <div class="flex justify-center">
+163:           <button on:click={handleLogout} title="Logout">
+                                              ^
+164:             <Avatar name={user.displayName} src={user.photoURL} size="sm" />
+165:           </button>
+8:42:51 AM [vite-plugin-svelte] src/components/layout/MobileNav.svelte:35:8 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+33:     >
+34:       <span class="w-5 h-5 flex items-center justify-center">
+35:         <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                ^
+36:       </span>
+37:       <span
+8:42:51 AM [vite-plugin-svelte] src/components/layout/MobileNav.svelte:45:8 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+43: 
+44:       {#if isActive(item.href)}
+45:         <span class="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#134e4a] rounded-b-full" />
+                                                                                                           ^
+46:       {/if}
+47:     </a>
+8:42:51 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:70:2 Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+68: <!-- Click-outside overlay to close dropdown -->
+69: {#if dropdownOpen}
+70:   <div
+        ^
+71:     class="fixed inset-0 z-10"
+72:     role="button"
+8:42:51 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:123:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+121: 
+122:     <!-- Notification bell -->
+123:     <button class="relative w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[#f3f4f6] transition-colors">
+                  ^
+124:       <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+125:         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+8:42:51 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:127:6 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+125:         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+126:       </svg>
+127:       <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+                                                                                          ^
+128:     </button>
+129: 
+8:42:51 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:131:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+129: 
+130:     <!-- Settings -->
+131:     <button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[#f3f4f6] transition-colors">
+                  ^
+132:       <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+133:         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+8:42:51 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:139:4 Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+137: 
+138:     <!-- Divider -->
+139:     <div class="w-px h-5 bg-[#e5e7eb] mx-1" />
+                                                   ^
+140: 
+141:     <!-- User avatar + chevron with dropdown -->
+8:42:51 AM [vite-plugin-svelte] src/components/ui/Badge.svelte:40:4 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+38: >
+39:   {#if dot}
+40:     <span class="w-1.5 h-1.5 rounded-full {dotColors[variant]}" />
+                                                                      ^
+41:   {/if}
+42:   {@render children?.()}
+[32m✓[39m 203 modules transformed.
+rendering chunks...
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+8:43:06 AM [vite-plugin-svelte] src/routes/(auth)/+layout.svelte:1:0 Using `<slot>` to render parent content is deprecated. Use `{@render ...}` tags instead
+https://svelte.dev/e/slot_element_deprecated
+1: <slot />
+           ^
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:200:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+198: <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+199: {#if activeMenu}
+200:   <div class="fixed inset-0 z-20" onclick={closeMenu}></div>
+                                                                 ^
+201: {/if}
+202: 
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:207:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+205:   <!-- Blurred backdrop -->
+206:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+207:   <div
+            ^
+208:     class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]"
+209:     onclick={closeDrawer}
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:213:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+211: 
+212:   <!-- Drawer panel — full screen on mobile, detached with margin on desktop -->
+213:   <div
+            ^
+214:     class="
+215:       fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:213:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+211: 
+212:   <!-- Drawer panel — full screen on mobile, detached with margin on desktop -->
+213:   <div
+            ^
+214:     class="
+215:       fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:229:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+227:         <span class="text-[#111827] font-medium">New Organization</span>
+228:       </nav>
+229:       <button
+                   ^
+230:         onclick={closeDrawer}
+231:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:289:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+287:           <!-- Org name -->
+288:           <div class="mb-4">
+289:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+290:               Name <span class="text-red-500">*</span>
+291:             </label>
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:308:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+306:           <!-- Photo upload -->
+307:           <div>
+308:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+309:               Upload Profile Photo
+310:             </label>
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:314:12 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+312:             <!-- Drop zone -->
+313:             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+314:             <div
+                      ^
+315:               class="relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+316:                      {dragging ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:361:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+359:           <!-- Contact name -->
+360:           <div class="mb-4">
+361:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+362:               Name <span class="text-red-500">*</span>
+363:             </label>
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:380:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+378:           <!-- Title/Position -->
+379:           <div class="mb-4">
+380:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+381:               Title/Position
+382:             </label>
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:395:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+393:           <!-- Email -->
+394:           <div class="mb-4">
+395:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+396:               Email Address <span class="text-red-500">*</span>
+397:             </label>
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:472:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+470:         </p>
+471:       </div>
+472:       <button
+                   ^
+473:         onclick={() => showToast = false}
+474:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5"
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:594:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+592:               </td>
+593:               <td class="px-4 py-4 relative">
+594:                 <button
+                             ^
+595:                   onclick={() => toggleMenu(org.id)}
+596:                   class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af]
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:659:12 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+657:           </a>
+658:           <div class="absolute right-4 top-4">
+659:             <button
+                         ^
+660:               onclick={() => toggleMenu(org.id)}
+661:               class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors"
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:705:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+703:       </p>
+704:       <div class="flex items-center gap-1">
+705:         <button
+                     ^
+706:           onclick={() => currentPage = Math.max(1, currentPage - 1)}
+707:           disabled={currentPage === 1}
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/+page.svelte:724:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+722:           </button>
+723:         {/each}
+724:         <button
+                     ^
+725:           onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+726:           disabled={currentPage === totalPages}
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:44:23 This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally
+42:   ]);
+43: 
+44:   const reservations = data.reservations;
+                               ^
+45: 
+46:   const getStatusVariant = (status: string) => {
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:193:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+191:     <p class="text-sm text-[#9ca3af]">Showing 1-10 of 70</p>
+192:     <div class="flex items-center gap-2">
+193:       <button class="p-2 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] transition-colors" disabled>
+                    ^
+194:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+195:           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/reservations/+page.svelte:199:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+197:       </button>
+198:       <button class="w-8 h-8 rounded-lg bg-[#0d9488] text-white text-xs font-semibold">1</button>
+199:       <button class="w-8 h-8 rounded-lg border border-[#e5e7eb] text-[#9ca3af] hover:bg-[#fafafa] text-xs font-semibold transition-colors">
+                    ^
+200:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+201:           <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:169:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+167:         <!-- Email -->
+168:         <div>
+169:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Email Address *</label>
+                                                                                                     ^
+170:           <input 
+171:             type="email" 
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:181:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+179:         <!-- First Name -->
+180:         <div>
+181:           <label class="block text-sm font-medium text-[#374151] mb-1.5">First Name</label>
+                                                                                                ^
+182:           <input 
+183:             type="text" 
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:193:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+191:         <!-- Last Name -->
+192:         <div>
+193:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Last Name</label>
+                                                                                               ^
+194:           <input 
+195:             type="text" 
+8:43:07 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/admin-team/+page.svelte:205:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+203:         <!-- Role -->
+204:         <div>
+205:           <label class="block text-sm font-medium text-[#374151] mb-1.5">Role *</label>
+                                                                                            ^
+206:           <select 
+207:             bind:value={role}
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:274:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+272: {#if showBlockModal}
+273:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+274:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+275:        onclick={() => showBlockModal = false}>
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:276:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+274:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+275:        onclick={() => showBlockModal = false}>
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+277:          onclick={(e) => e.stopPropagation()}>
+278:       <button onclick={() => showBlockModal = false}
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:278:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+276:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+277:          onclick={(e) => e.stopPropagation()}>
+278:       <button onclick={() => showBlockModal = false}
+                    ^
+279:         class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+280:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:312:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+310: {#if activeSpaceMenu}
+311:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+312:   <div class="fixed inset-0 z-20" onclick={() => activeSpaceMenu = null}></div>
+                                                                                    ^
+313: {/if}
+314: 
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:332:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+330:         </p>
+331:       </div>
+332:       <button onclick={() => showSpaceToast = false}
+                    ^
+333:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5">
+334:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:345:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+343: {#if showSpaceDrawer}
+344:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+                                                                                                          ^
+346: 
+347:   <div
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:347:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+346: 
+347:   <div
+            ^
+348:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+349:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[380px] sm:rounded-2xl"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:347:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+345:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeSpaceDrawer}></div>
+346: 
+347:   <div
+            ^
+348:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+349:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[380px] sm:rounded-2xl"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:357:8 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+355:         <a href="/dashboard/venues" class="hover:text-[#374151] transition-colors shrink-0">Venue</a>
+356:         <span class="shrink-0">/</span>
+357:         <span class="hover:text-[#374151] cursor-pointer shrink-0" onclick={closeSpaceDrawer}>Venue Details</span>
+                                                                                                                       ^
+358:         <span class="shrink-0">/</span>
+359:         <span class="shrink-0 truncate max-w-[80px]">{venue.name}</span>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:357:8 `<span>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+355:         <a href="/dashboard/venues" class="hover:text-[#374151] transition-colors shrink-0">Venue</a>
+356:         <span class="shrink-0">/</span>
+357:         <span class="hover:text-[#374151] cursor-pointer shrink-0" onclick={closeSpaceDrawer}>Venue Details</span>
+                                                                                                                       ^
+358:         <span class="shrink-0">/</span>
+359:         <span class="shrink-0 truncate max-w-[80px]">{venue.name}</span>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:363:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+361:         <span class="text-[#111827] font-medium shrink-0">New Space</span>
+362:       </nav>
+363:       <button onclick={closeSpaceDrawer}
+                    ^
+364:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+365:                hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors shrink-0 ml-2">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:407:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+405: 
+406:         <div class="mb-4">
+407:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+408:             Name <span class="text-red-500">*</span>
+409:           </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:418:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+416: 
+417:         <div class="mb-4">
+418:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+419:             Description <span class="text-red-500">*</span>
+420:           </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:421:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+419:             Description <span class="text-red-500">*</span>
+420:           </label>
+421:           <textarea bind:value={spaceDescription} placeholder="Enter space description" rows="4"
+                                                                                                      ^
+422:             class="w-full px-4 py-2.5 text-sm rounded-lg border resize-none
+423:                    {step1SpaceErrors.spaceDescription ? 'border-red-400 bg-red-50' : 'border-[#e5e7eb]'}
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:429:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+427: 
+428:         <div class="mb-4">
+429:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+430:             No. of Guest <span class="text-red-500">*</span>
+431:           </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:444:8 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+442: 
+443:         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+444:         <div
+                  ^
+445:           class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+446:                  {draggingSpacePhotos ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:473:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+471:               <div class="relative rounded-lg overflow-hidden aspect-square">
+472:                 <img src={preview} alt="Photo {i+1}" class="w-full h-full object-cover"/>
+473:                 <button
+                             ^
+474:                   onclick={() => { spacePhotoPreviews = spacePhotoPreviews.filter((_,idx) => idx !== i); spacePhotos = spacePhotos.filter((_,idx) => idx !== i); }}
+475:                   class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:509:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+507:                 class="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] bg-[#f9fafb]
+508:                        focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+509:               <button onclick={() => removeRule(i)}
+                            ^
+510:                 class="text-[#9ca3af] hover:text-[#dc2626] transition-colors p-1 shrink-0">
+511:                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:545:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+543:                          bg-white text-xs font-medium text-[#374151]">
+544:               {amenity}
+545:               <button onclick={() => removeAmenity(amenity)}
+                            ^
+546:                 class="text-[#9ca3af] hover:text-[#374151] transition-colors">
+547:                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:605:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+603:             <div class="p-4 space-y-4">
+604:               <div>
+605:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+606:                   Hourly Rate <span class="text-red-500">*</span>
+607:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:620:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+618:               </div>
+619:               <div>
+620:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+621:                   What's included? <span class="text-red-500">*</span>
+622:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:623:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+621:                   What's included? <span class="text-red-500">*</span>
+622:                 </label>
+623:                 <textarea bind:value={whatsIncluded} placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                                ^
+624:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+625:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:628:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+626:               </div>
+627:               <div>
+628:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+629:                   Minimum Booking Hours <span class="text-red-500">*</span>
+630:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:647:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+645:             <div class="p-4 space-y-4">
+646:               <div>
+647:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+648:                   Price per Guest <span class="text-red-500">*</span>
+649:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:662:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+660:               </div>
+661:               <div>
+662:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+663:                   What's included? <span class="text-red-500">*</span>
+664:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:665:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+663:                   What's included? <span class="text-red-500">*</span>
+664:                 </label>
+665:                 <textarea placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                  ^
+666:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+667:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:671:18 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+669:               <div class="grid grid-cols-2 gap-3">
+670:                 <div>
+671:                   <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                               ^
+672:                     Minimum Guest <span class="text-red-500">*</span>
+673:                   </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:679:18 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+677:                 </div>
+678:                 <div>
+679:                   <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                               ^
+680:                     Maximum Guest <span class="text-red-500">*</span>
+681:                   </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:699:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+697:             <div class="p-4 space-y-4">
+698:               <div>
+699:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+700:                   Venue Fee <span class="text-red-500">*</span>
+701:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:714:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+712:               </div>
+713:               <div>
+714:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+715:                   What's included? <span class="text-red-500">*</span>
+716:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:717:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+715:                   What's included? <span class="text-red-500">*</span>
+716:                 </label>
+717:                 <textarea placeholder="Describe what guest would have access to..." rows="4"
+                                                                                                  ^
+718:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+719:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:743:16 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+741:               </div>
+742:               <div>
+743:                 <label class="block text-xs font-medium text-[#374151] mb-1.5">
+                             ^
+744:                   Message for Guests <span class="text-red-500">*</span>
+745:                 </label>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:746:16 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+744:                   Message for Guests <span class="text-red-500">*</span>
+745:                 </label>
+746:                 <textarea placeholder="Explain why guests should contact your for pricing..." rows="4"
+                                                                                                            ^
+747:                   class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+748:                          focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:818:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+816:               <div class="flex items-center gap-3">
+817:                 <span class="text-sm font-medium text-[#374151] w-24 shrink-0">{day}</span>
+818:                 <button type="button" onclick={() => toggleSpaceDay(day)}
+                              ^
+819:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+820:                          {spaceHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:821:18 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+819:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+820:                          {spaceHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+821:                   <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                    ^
+822:                                {spaceHours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+823:                 </button>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:855:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+853:                       </div>
+854:                       {#if spaceHours[day].slots.length > 1}
+855:                         <button onclick={() => removeSpaceSlot(day, i)}
+                                      ^
+856:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors">
+857:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:863:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+861:                       {/if}
+862:                       {#if i === spaceHours[day].slots.length - 1}
+863:                         <button onclick={() => addSpaceSlot(day)}
+                                      ^
+864:                           class="w-6 h-6 rounded-md border border-[#e5e7eb] flex items-center justify-center
+865:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:885:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+883:         <!-- Layout Image -->
+884:         <div class="mb-5">
+885:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+                                                                                                ^
+886:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+887:           <div
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:887:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+885:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+886:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+887:           <div
+                    ^
+888:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+889:                    {draggingSpaceLayout ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:919:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+917:         <!-- Venue Brochure -->
+918:         <div class="mb-5">
+919:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+                                                                                                  ^
+920:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+921:           <div
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:921:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+919:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+920:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+921:           <div
+                    ^
+922:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+923:                    {draggingSpaceBrochure ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:957:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+955:         <!-- Additional Notes -->
+956:         <div>
+957:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+                                                                                                    ^
+958:           <textarea bind:value={spaceNotes} placeholder="Additional notes" rows="4"
+959:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:958:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+956:         <div>
+957:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+958:           <textarea bind:value={spaceNotes} placeholder="Additional notes" rows="4"
+                                                                                         ^
+959:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+960:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1163:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1161:                 </td>
+1162:                 <td class="px-4 py-4 relative" onclick={(e) => e.stopPropagation()}>
+1163:                   <button onclick={() => activeSpaceMenu = activeSpaceMenu === space.id ? null : space.id}
+                                 ^
+1164:                     class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+1165:                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1224:14 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1222:             </a>
+1223:             <div class="absolute right-4 top-4">
+1224:               <button onclick={() => activeSpaceMenu = activeSpaceMenu === space.id ? null : space.id}
+                             ^
+1225:                 class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+1226:                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1239:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1237:         <p class="text-xs text-[#6b7280]">Showing 1-{venue.spaces.length} of {venue.spaceCount}</p>
+1238:         <div class="flex items-center gap-1">
+1239:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                         ^
+1240:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+1241:           </button>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1243:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1241:           </button>
+1242:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+1243:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647] transition-colors">
+                         ^
+1244:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+1245:           </button>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1310:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1308:         <p class="text-xs text-[#6b7280]">Showing 1-{venue.reservations.length} of {venue.reservationCount}</p>
+1309:         <div class="flex items-center gap-1">
+1310:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                         ^
+1311:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+1312:           </button>
+8:43:08 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/+page.svelte:1314:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+1312:           </button>
+1313:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+1314:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647] transition-colors">
+                         ^
+1315:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+1316:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:261:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+259: <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+260: {#if activeMenu}
+261:   <div class="fixed inset-0 z-20" onclick={closeMenu}></div>
+                                                                 ^
+262: {/if}
+263: 
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:267:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+265: {#if showDrawer}
+266:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+                                                                                                     ^
+268: 
+269:   <div
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:269:2 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+268: 
+269:   <div
+            ^
+270:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+271:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[520px] sm:rounded-2xl"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:269:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+267:   <div class="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1.5px]" onclick={closeDrawer}></div>
+268: 
+269:   <div
+            ^
+270:     class="fixed z-50 bg-white shadow-2xl flex flex-col drawer-slide-in
+271:            inset-0 sm:inset-y-4 sm:right-4 sm:left-auto sm:w-[520px] sm:rounded-2xl"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:281:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+279:         <span class="text-[#111827] font-medium">New Venue</span>
+280:       </nav>
+281:       <button
+                   ^
+282:         onclick={closeDrawer}
+283:         class="w-7 h-7 flex items-center justify-center rounded-full text-[#9ca3af]
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:333:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+331:         <!-- Name -->
+332:         <div class="mb-4">
+333:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+334:             Name <span class="text-red-500">*</span>
+335:           </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:345:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+343:         <!-- Description -->
+344:         <div class="mb-4">
+345:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+346:             Description <span class="text-red-500">*</span>
+347:           </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:348:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+346:             Description <span class="text-red-500">*</span>
+347:           </label>
+348:           <textarea bind:value={venueDescription} placeholder="Enter venue description" rows="4"
+                                                                                                      ^
+349:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+350:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:355:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+353:         <!-- Organization -->
+354:         <div class="mb-4">
+355:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+356:             Organization <span class="text-red-500">*</span>
+357:           </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:375:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+373:         <!-- Country -->
+374:         <div class="mb-4">
+375:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+376:             Country <span class="text-red-500">*</span>
+377:           </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:395:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+393:         <!-- Address -->
+394:         <div class="mb-4">
+395:           <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                       ^
+396:             Address <span class="text-red-500">*</span>
+397:           </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:408:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+406:         <div class="grid grid-cols-3 gap-3">
+407:           <div>
+408:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+409:               City <span class="text-red-500">*</span>
+410:             </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:418:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+416:           </div>
+417:           <div>
+418:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+419:               State <span class="text-red-500">*</span>
+420:             </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:436:12 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+434:           </div>
+435:           <div>
+436:             <label class="block text-sm font-medium text-[#374151] mb-1.5">
+                         ^
+437:               Zip Code <span class="text-red-500">*</span>
+438:             </label>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:452:8 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+450: 
+451:         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+452:         <div
+                  ^
+453:           class="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+454:                  {draggingPhotos ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:481:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+479:               <div class="relative rounded-lg overflow-hidden aspect-square">
+480:                 <img src={preview} alt="Photo {i+1}" class="w-full h-full object-cover"/>
+481:                 <button
+                             ^
+482:                   onclick={() => { photoPreviews = photoPreviews.filter((_,idx) => idx !== i); venuePhotos = venuePhotos.filter((_,idx) => idx !== i); }}
+483:                   class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:508:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+506:                   <span class="text-sm font-medium text-[#374151] w-20">{day}</span>
+507:                   <!-- Toggle switch -->
+508:                   <button
+                               ^
+509:                     type="button"
+510:                     onclick={() => toggleDay(day)}
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:514:20 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+512:                            {hours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}"
+513:                   >
+514:                     <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                 ^
+515:                                  {hours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+516:                   </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:556:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+554:                       <!-- Remove slot -->
+555:                       {#if hours[day].slots.length > 1}
+556:                         <button onclick={() => removeSlot(day, i)}
+                                      ^
+557:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors">
+558:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:566:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+564:                       <!-- Add slot (on last slot) -->
+565:                       {#if i === hours[day].slots.length - 1}
+566:                         <button onclick={() => addSlot(day)}
+                                      ^
+567:                           class="w-6 h-6 rounded-md border border-[#e5e7eb] flex items-center justify-center
+568:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:588:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+586:         <!-- Layout Image -->
+587:         <div class="mb-5">
+588:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+                                                                                                ^
+589:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+590:           <div
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:590:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+588:           <label class="block text-sm font-medium text-[#374151] mb-2">Layout Image</label>
+589:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+590:           <div
+                    ^
+591:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+592:                    {draggingLayout ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:622:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+620:         <!-- Venue Brochure -->
+621:         <div class="mb-5">
+622:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+                                                                                                  ^
+623:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+624:           <div
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:624:10 `<div>` with a dragover, dragleave, drop or click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+622:           <label class="block text-sm font-medium text-[#374151] mb-2">Venue Brochure</label>
+623:           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+624:           <div
+                    ^
+625:             class="border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer
+626:                    {draggingBrochure ? 'border-[#0d9488] bg-[#f0fdf4]' : 'border-[#e5e7eb] hover:border-[#d1d5db] bg-[#fafafa]'}"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:660:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+658:         <!-- Additional Notes -->
+659:         <div>
+660:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+                                                                                                    ^
+661:           <textarea bind:value={additionalNotes} placeholder="Additional notes" rows="4"
+662:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:661:10 Self-closing HTML tags for non-void elements are ambiguous — use `<textarea ...></textarea>` rather than `<textarea ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+659:         <div>
+660:           <label class="block text-sm font-medium text-[#374151] mb-2">Additional Notes</label>
+661:           <textarea bind:value={additionalNotes} placeholder="Additional notes" rows="4"
+                                                                                              ^
+662:             class="w-full px-4 py-2.5 text-sm rounded-lg border border-[#e5e7eb] resize-none
+663:                    focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#9ca3af]"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:721:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+719:         </p>
+720:       </div>
+721:       <button onclick={() => showToast = false}
+                    ^
+722:         class="text-[#9ca3af] hover:text-[#374151] transition-colors shrink-0 mt-0.5">
+723:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:835:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+833:               </td>
+834:               <td class="px-4 py-4 relative">
+835:                 <button onclick={() => toggleMenu(venue.id)}
+                              ^
+836:                   class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af]
+837:                          hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:896:12 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+894:           </a>
+895:           <div class="absolute right-4 top-4">
+896:             <button onclick={() => toggleMenu(venue.id)}
+                          ^
+897:               class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+898:               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:940:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+938:       </p>
+939:       <div class="flex items-center gap-1">
+940:         <button onclick={() => currentPage = Math.max(1, currentPage - 1)} disabled={currentPage === 1}
+                      ^
+941:           class="w-8 h-8 flex items-center justify-center rounded-lg border border-[#e5e7eb]
+942:                  text-[#374151] hover:bg-[#f9fafb] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/+page.svelte:954:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+952:           </button>
+953:         {/each}
+954:         <button onclick={() => currentPage = Math.min(totalPages, currentPage + 1)} disabled={currentPage === totalPages}
+                      ^
+955:           class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white
+956:                  hover:bg-[#243647] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:113:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+111: {#if showBlockModal}
+112:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+113:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+114:        onclick={() => showBlockModal = false}>
+115:     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:116:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+114:        onclick={() => showBlockModal = false}>
+115:     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+116:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+117:          onclick={(e) => e.stopPropagation()}>
+118:       <button onclick={() => showBlockModal = false}
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:118:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+116:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+117:          onclick={(e) => e.stopPropagation()}>
+118:       <button onclick={() => showBlockModal = false}
+                    ^
+119:               class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+120:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:322:18 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+320:                 </td>
+321:                 <td class="px-4 py-4">
+322:                   <button class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+                                ^
+323:                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+324:                       <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:337:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+335:         <p class="text-xs text-[#6b7280]">Showing 1-{org.venues.length} of {org.venueCount}</p>
+336:         <div class="flex items-center gap-1">
+337:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+                        ^
+338:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+339:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:341:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+339:           </button>
+340:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+341:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+                        ^
+342:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+343:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:390:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+388:         <p class="text-xs text-[#6b7280]">Showing 1-{org.reservations.length} of {org.reservationCount}</p>
+389:         <div class="flex items-center gap-1">
+390:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+                        ^
+391:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+392:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:394:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+392:           </button>
+393:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+394:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+                        ^
+395:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+396:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:437:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+435:         <p class="text-xs text-[#6b7280]">Showing 1-{org.team.length} of {org.team.length}</p>
+436:         <div class="flex items-center gap-1">
+437:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+438:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+439:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:441:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+439:           </button>
+440:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+441:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+442:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+443:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:484:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+482:         <p class="text-xs text-[#6b7280]">Showing 1-{org.activity.length} of {org.activity.length}</p>
+483:         <div class="flex items-center gap-1">
+484:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+485:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+486:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/organizations/[id]/+page.svelte:488:10 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+486:           </button>
+487:           <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+488:           <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+                        ^
+489:             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+490:           </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:153:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+151: {#if lightboxSrc}
+152:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+153:   <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+             ^
+154:        onclick={() => lightboxSrc = null}>
+155:     <img src={lightboxSrc} alt="Gallery" class="max-w-full max-h-[90vh] rounded-xl object-contain"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:156:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+154:        onclick={() => lightboxSrc = null}>
+155:     <img src={lightboxSrc} alt="Gallery" class="max-w-full max-h-[90vh] rounded-xl object-contain"/>
+156:     <button onclick={() => lightboxSrc = null}
+                  ^
+157:       class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+158:       <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:168:2 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+166: {#if showBlockModal}
+167:   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+168:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+             ^
+169:        onclick={() => showBlockModal = false}>
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:170:4 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+168:   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+169:        onclick={() => showBlockModal = false}>
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+               ^
+171:          onclick={(e) => e.stopPropagation()}>
+172:       <button onclick={() => showBlockModal = false}
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:172:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+170:     <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
+171:          onclick={(e) => e.stopPropagation()}>
+172:       <button onclick={() => showBlockModal = false}
+                    ^
+173:         class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
+174:         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:219:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+217:       <div class="flex items-center gap-4 min-w-0">
+218:         <!-- Back button -->
+219:         <button onclick={() => goto(`/dashboard/venues/${venueId}`)}
+                      ^
+220:           class="w-10 h-10 rounded-full border border-[#e5e7eb] flex items-center justify-center
+221:                  text-[#6b7280] hover:bg-[#f9fafb] transition-colors shrink-0">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:278:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+276:       <div class="flex items-center justify-between mb-4">
+277:         <p class="text-[10px] font-bold tracking-widest uppercase text-[#9ca3af]">Amenities</p>
+278:         <button class="text-[#6b7280] hover:text-[#374151] transition-colors">
+                      ^
+279:           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+280:             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:299:8 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+297:       <div class="flex items-center justify-between mb-4">
+298:         <p class="text-[10px] font-bold tracking-widest uppercase text-[#9ca3af]">Pricing</p>
+299:         <button class="text-[#6b7280] hover:text-[#374151] transition-colors">
+                      ^
+300:           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+301:             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:352:16 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+350:               <div class="flex items-center gap-4">
+351:                 <span class="text-sm font-medium text-[#374151] w-24 shrink-0">{day}</span>
+352:                 <button type="button" onclick={() => toggleDay(day)}
+                              ^
+353:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+354:                          {editableHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:355:18 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+353:                   class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0
+354:                          {editableHours[day].enabled ? 'bg-[#134e4a]' : 'bg-[#d1d5db]'}">
+355:                   <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                                                                                                       ^
+356:                                {editableHours[day].enabled ? 'translate-x-6' : 'translate-x-1'}"/>
+357:                 </button>
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:385:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+383:                       </div>
+384:                       {#if editableHours[day].slots.length > 1}
+385:                         <button onclick={() => removeSlot(day, i)}
+                                      ^
+386:                           class="text-[#9ca3af] hover:text-[#dc2626] transition-colors p-0.5">
+387:                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:393:24 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+391:                       {/if}
+392:                       {#if i === editableHours[day].slots.length - 1}
+393:                         <button onclick={() => addSlot(day)}
+                                      ^
+394:                           class="w-7 h-7 rounded-md border border-[#e5e7eb] flex items-center justify-center
+395:                                  text-[#6b7280] hover:border-[#0d9488] hover:text-[#0d9488] transition-colors">
+8:43:09 AM [vite-plugin-svelte] src/routes/(dashboard)/dashboard/venues/[id]/spaces/[spaceId]/+page.svelte:452:12 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions
+450:           {#each space.gallery as img, i}
+451:             <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+452:             <div
+                      ^
+453:               class="rounded-xl overflow-hidden aspect-[4/3] bg-[#f3f4f6] cursor-pointer
+454:                      hover:opacity-90 transition-opacity"
+8:43:10 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:67:6 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+65:   {:else}
+66:     <div class="py-3 flex justify-center">
+67:       <button class="w-8 h-8 flex items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#f3f4f6] transition-colors">
+                   ^
+68:         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+69:           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+8:43:10 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:97:14 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+ 95:           >
+ 96:             <span class="shrink-0 {isActive(item.href) ? 'text-white' : 'text-[#6b7280]'}">
+ 97:               <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                       ^
+ 98:             </span>
+ 99:             {#if open}
+8:43:10 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:129:14 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+127:           >
+128:             <span class="shrink-0 {isActive(item.href) ? 'text-white' : 'text-[#6b7280]'}">
+129:               <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                       ^
+130:             </span>
+131:             {#if open}
+8:43:10 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:151:12 Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated
+149:           </div>
+150:           <button
+151:             on:click={handleLogout}
+                                        ^
+152:             class="text-[#9ca3af] hover:text-[#374151] transition-colors p-1 rounded"
+153:             title="Logout"
+8:43:10 AM [vite-plugin-svelte] src/components/layout/Sidebar.svelte:163:18 Using `on:click` to listen to the click event is deprecated. Use the event attribute `onclick` instead
+https://svelte.dev/e/event_directive_deprecated
+161:         <!-- Collapsed: just avatar centered -->
+162:         <div class="flex justify-center">
+163:           <button on:click={handleLogout} title="Logout">
+                                              ^
+164:             <Avatar name={user.displayName} src={user.photoURL} size="sm" />
+165:           </button>
+8:43:10 AM [vite-plugin-svelte] src/components/layout/MobileNav.svelte:35:8 `<svelte:component>` is deprecated in runes mode — components are dynamic by default
+https://svelte.dev/e/svelte_component_deprecated
+33:     >
+34:       <span class="w-5 h-5 flex items-center justify-center">
+35:         <svelte:component this={item.icon} class="w-4 h-4"/>
+                                                                ^
+36:       </span>
+37:       <span
+8:43:10 AM [vite-plugin-svelte] src/components/layout/MobileNav.svelte:45:8 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+43: 
+44:       {#if isActive(item.href)}
+45:         <span class="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#134e4a] rounded-b-full" />
+                                                                                                           ^
+46:       {/if}
+47:     </a>
+8:43:10 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:70:2 Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+68: <!-- Click-outside overlay to close dropdown -->
+69: {#if dropdownOpen}
+70:   <div
+        ^
+71:     class="fixed inset-0 z-10"
+72:     role="button"
+8:43:10 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:123:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+121: 
+122:     <!-- Notification bell -->
+123:     <button class="relative w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[#f3f4f6] transition-colors">
+                  ^
+124:       <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+125:         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+8:43:10 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:127:6 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+125:         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+126:       </svg>
+127:       <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+                                                                                          ^
+128:     </button>
+129: 
+8:43:10 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:131:4 Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label
+129: 
+130:     <!-- Settings -->
+131:     <button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#6b7280] hover:bg-[#f3f4f6] transition-colors">
+                  ^
+132:       <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+133:         <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+8:43:10 AM [vite-plugin-svelte] src/components/layout/TopBar.svelte:139:4 Self-closing HTML tags for non-void elements are ambiguous — use `<div ...></div>` rather than `<div ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+137: 
+138:     <!-- Divider -->
+139:     <div class="w-px h-5 bg-[#e5e7eb] mx-1" />
+                                                   ^
+140: 
+141:     <!-- User avatar + chevron with dropdown -->
+8:43:10 AM [vite-plugin-svelte] src/components/ui/Badge.svelte:40:4 Self-closing HTML tags for non-void elements are ambiguous — use `<span ...></span>` rather than `<span ... />`
+https://svelte.dev/e/element_invalid_self_closing_tag
+38: >
+39:   {#if dot}
+40:     <span class="w-1.5 h-1.5 rounded-full {dotColors[variant]}" />
+                                                                      ^
+41:   {/if}
+42:   {@render children?.()}
+[32m✓[39m 232 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m.svelte-kit/output/client/[22m[32m_app/version.json                       [39m[1m[2m  0.03 kB[22m[1m[22m[2m │ gzip:  0.05 kB[22m
+[2m.svelte-kit/output/client/[22m[32m.vite/manifest.json                     [39m[1m[2m 16.45 kB[22m[1m[22m[2m │ gzip:  1.74 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/17.B74pr2IL.css   [39m[1m[2m  0.20 kB[22m[1m[22m[2m │ gzip:  0.15 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/15.Cw6VqvkA.css   [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:  0.19 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/11.dOxL908l.css   [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:  0.19 kB[22m
+[2m.svelte-kit/output/client/[22m[35m_app/immutable/assets/0.DvOaQV4D.css    [39m[1m[2m 44.56 kB[22m[1m[22m[2m │ gzip:  8.45 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Dz_HJ1eh.js       [39m[1m[2m  0.04 kB[22m[1m[22m[2m │ gzip:  0.06 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/entry/start.BdbvxlQu.js  [39m[1m[2m  0.12 kB[22m[1m[22m[2m │ gzip:  0.11 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/19.Bu3V3TNt.js     [39m[1m[2m  0.15 kB[22m[1m[22m[2m │ gzip:  0.15 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/BPNiRCXI.js       [39m[1m[2m  0.19 kB[22m[1m[22m[2m │ gzip:  0.17 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/3.7qW8Ttv0.js      [39m[1m[2m  0.22 kB[22m[1m[22m[2m │ gzip:  0.17 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/2.B9dvw_2Y.js      [39m[1m[2m  0.30 kB[22m[1m[22m[2m │ gzip:  0.24 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/5.HzVTkJeT.js      [39m[1m[2m  0.32 kB[22m[1m[22m[2m │ gzip:  0.25 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CX0M6DAh.js       [39m[1m[2m  0.32 kB[22m[1m[22m[2m │ gzip:  0.25 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Bv_ewMM1.js       [39m[1m[2m  0.37 kB[22m[1m[22m[2m │ gzip:  0.26 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/nxZjCsX9.js       [39m[1m[2m  0.38 kB[22m[1m[22m[2m │ gzip:  0.28 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/18.Da7fHX2R.js     [39m[1m[2m  0.39 kB[22m[1m[22m[2m │ gzip:  0.27 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/DYXeZ3VQ.js       [39m[1m[2m  0.40 kB[22m[1m[22m[2m │ gzip:  0.29 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CYg7Mkwr.js       [39m[1m[2m  0.42 kB[22m[1m[22m[2m │ gzip:  0.24 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/gdBZRUtx.js       [39m[1m[2m  0.75 kB[22m[1m[22m[2m │ gzip:  0.47 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CtGANHwu.js       [39m[1m[2m  0.81 kB[22m[1m[22m[2m │ gzip:  0.45 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/1.DRVJYkSI.js      [39m[1m[2m  1.06 kB[22m[1m[22m[2m │ gzip:  0.60 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/JdwPZyLo.js       [39m[1m[2m  1.12 kB[22m[1m[22m[2m │ gzip:  0.64 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Ds7CIllN.js       [39m[1m[2m  1.13 kB[22m[1m[22m[2m │ gzip:  0.65 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/DsMV3mFG.js       [39m[1m[2m  1.49 kB[22m[1m[22m[2m │ gzip:  0.66 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CbOakxcQ.js       [39m[1m[2m  1.60 kB[22m[1m[22m[2m │ gzip:  0.84 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/BPD5caUy.js       [39m[1m[2m  1.75 kB[22m[1m[22m[2m │ gzip:  0.99 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/C1JGV6lq.js       [39m[1m[2m  1.86 kB[22m[1m[22m[2m │ gzip:  0.94 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/4a3I-qTA.js       [39m[1m[2m  2.05 kB[22m[1m[22m[2m │ gzip:  1.06 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/0.BhgzKcZL.js      [39m[1m[2m  2.24 kB[22m[1m[22m[2m │ gzip:  1.08 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/D8yAtD6r.js       [39m[1m[2m  2.52 kB[22m[1m[22m[2m │ gzip:  1.30 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CGalCoGn.js       [39m[1m[2m  3.08 kB[22m[1m[22m[2m │ gzip:  1.38 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/8.x2SbopHt.js      [39m[1m[2m  4.03 kB[22m[1m[22m[2m │ gzip:  1.93 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/BTZlTIQP.js       [39m[1m[2m  4.90 kB[22m[1m[22m[2m │ gzip:  2.34 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CldlPC1r.js       [39m[1m[2m  5.05 kB[22m[1m[22m[2m │ gzip:  2.29 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/14.B4DY3fli.js     [39m[1m[2m  5.90 kB[22m[1m[22m[2m │ gzip:  2.09 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/7.CXtKvfZV.js      [39m[1m[2m  6.26 kB[22m[1m[22m[2m │ gzip:  2.84 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/CcLE7_zO.js       [39m[1m[2m  6.59 kB[22m[1m[22m[2m │ gzip:  2.69 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Bt0FKS5W.js       [39m[1m[2m  7.27 kB[22m[1m[22m[2m │ gzip:  3.15 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/10.De7FaqNR.js     [39m[1m[2m  7.28 kB[22m[1m[22m[2m │ gzip:  2.88 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/Cd9Orj3v.js       [39m[1m[2m  7.90 kB[22m[1m[22m[2m │ gzip:  3.59 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/13.DaUlXEPw.js     [39m[1m[2m  8.16 kB[22m[1m[22m[2m │ gzip:  2.61 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/6.B4SbfYya.js      [39m[1m[2m  9.39 kB[22m[1m[22m[2m │ gzip:  3.96 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/entry/app.D_qi5ZAj.js    [39m[1m[2m 10.60 kB[22m[1m[22m[2m │ gzip:  3.82 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/9.SyQuNMyC.js      [39m[1m[2m 12.70 kB[22m[1m[22m[2m │ gzip:  3.75 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/4.DHBdNs_N.js      [39m[1m[2m 16.83 kB[22m[1m[22m[2m │ gzip:  5.45 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/12.DVv7f9JK.js     [39m[1m[2m 22.70 kB[22m[1m[22m[2m │ gzip:  4.92 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/17.CYugmVbq.js     [39m[1m[2m 23.45 kB[22m[1m[22m[2m │ gzip:  6.63 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/jYYg36lm.js       [39m[1m[2m 24.03 kB[22m[1m[22m[2m │ gzip:  9.46 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/DNbwvFZf.js       [39m[1m[2m 24.54 kB[22m[1m[22m[2m │ gzip:  9.63 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/11.B0QzO-eI.js     [39m[1m[2m 27.35 kB[22m[1m[22m[2m │ gzip:  7.24 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/15.BbzzXbn_.js     [39m[1m[2m 42.83 kB[22m[1m[22m[2m │ gzip: 10.48 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/nodes/16.CfIZ8019.js     [39m[1m[2m 64.76 kB[22m[1m[22m[2m │ gzip: 14.00 kB[22m
+[2m.svelte-kit/output/client/[22m[36m_app/immutable/chunks/BeMR8Pop.js       [39m[1m[2m197.50 kB[22m[1m[22m[2m │ gzip: 64.19 kB[22m
+[32m✓ built in 15.55s[39m
+[2m.svelte-kit/output/server/[22m[32m.vite/manifest.json                                                               [39m[1m[2m 16.39 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_page.B74pr2IL.css                                          [39m[1m[2m  0.20 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_page.Cw6VqvkA.css                                          [39m[1m[2m  0.39 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_page.dOxL908l.css                                          [39m[1m[2m  0.39 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[35m_app/immutable/assets/_layout.U0bnyGcy.css                                        [39m[1m[2m 44.53 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/false.js                                                                   [39m[1m[2m  0.04 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/_page.server.ts.js                                                  [39m[1m[2m  0.12 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/login/forgot-password/done/_page.server.ts.js                [39m[1m[2m  0.12 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/demo/playwright/_page.svelte.js                                     [39m[1m[2m  0.13 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/html.js                                                                    [39m[1m[2m  0.14 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/login/_page.server.ts.js                                     [39m[1m[2m  0.16 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/fallbacks/layout.svelte.js                                                [39m[1m[2m  0.17 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/environment.js                                                             [39m[1m[2m  0.19 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/_layout.server.ts.js                                    [39m[1m[2m  0.19 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/reservations/_page.server.ts.js               [39m[1m[2m  0.20 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/_layout.svelte.js                                            [39m[1m[2m  0.24 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/_page.svelte.js                                                     [39m[1m[2m  0.25 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36minternal.js                                                                       [39m[1m[2m  0.40 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/_page.server.ts.js                            [39m[1m[2m  0.40 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/hooks.server.js                                                           [39m[1m[2m  0.41 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/state.svelte.js                                                            [39m[1m[2m  0.45 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/server.js                                                                  [39m[1m[2m  0.50 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/revenues/_page.server.ts.js                   [39m[1m[2m  0.66 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/auth.store.js                                                              [39m[1m[2m  0.78 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/client.js                                                                  [39m[1m[2m  0.96 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/demo/_page.svelte.js                                                [39m[1m[2m  1.04 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/organizations/_id_/_page.server.ts.js         [39m[1m[2m  1.04 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/fallbacks/error.svelte.js                                                 [39m[1m[2m  1.12 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/utils.js                                                                   [39m[1m[2m  1.15 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/admin-team/_page.server.ts.js                 [39m[1m[2m  1.21 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/Badge.js                                                                   [39m[1m[2m  1.24 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/endpoints/api/auth/session/_server.ts.js                                  [39m[1m[2m  1.37 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/organizations/_page.server.ts.js              [39m[1m[2m  1.61 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/StatCard.js                                                                [39m[1m[2m  1.78 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/session.js                                                                 [39m[1m[2m  2.04 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/_layout.svelte.js                                                   [39m[1m[2m  2.26 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/ui.store.js                                                                [39m[1m[2m  2.41 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/venues/_page.server.ts.js                     [39m[1m[2m  2.53 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/routing.js                                                                 [39m[1m[2m  2.68 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/server2.js                                                                 [39m[1m[2m  2.97 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/url.js                                                                     [39m[1m[2m  3.21 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/internal.js                                                                [39m[1m[2m  3.36 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/login/forgot-password/done/_page.svelte.js                   [39m[1m[2m  4.01 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/login/forgot-password/_page.svelte.js                        [39m[1m[2m  4.86 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/exports.js                                                                 [39m[1m[2m  5.03 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/TopBar.js                                                                  [39m[1m[2m  6.13 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(auth)/login/_page.svelte.js                                        [39m[1m[2m  6.75 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/revenues/_page.svelte.js                      [39m[1m[2m  6.90 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/Logo.js                                                                    [39m[1m[2m  7.20 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/admin-team/_page.svelte.js                    [39m[1m[2m  7.60 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/reservations/_page.svelte.js                  [39m[1m[2m  8.71 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/organizations/_id_/_page.svelte.js            [39m[1m[2m 13.49 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/_page.svelte.js                               [39m[1m[2m 14.57 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/db.js                                                                      [39m[1m[2m 14.97 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/organizations/_page.svelte.js                 [39m[1m[2m 16.00 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/venues/_page.svelte.js                        [39m[1m[2m 16.31 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mremote-entry.js                                                                   [39m[1m[2m 19.06 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/_layout.svelte.js                             [39m[1m[2m 21.02 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/venues/_id_/spaces/_spaceId_/_page.svelte.js  [39m[1m[2m 21.09 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mentries/pages/(dashboard)/dashboard/venues/_id_/_page.svelte.js                   [39m[1m[2m 26.09 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/shared.js                                                                  [39m[1m[2m 27.07 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/root.js                                                                    [39m[1m[2m 30.68 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mchunks/index.js                                                                   [39m[1m[2m 90.86 kB[22m[1m[22m
+[2m.svelte-kit/output/server/[22m[36mindex.js                                                                          [39m[1m[2m124.28 kB[22m[1m[22m
+[32m✓ built in 34.14s[39m
+
+Run npm run preview to preview your production build locally.
+
+> Using @sveltejs/adapter-vercel
+  Warning: The following modules failed to locate dependencies that may (or may not) be required for your app to work:
+  node_modules\node-fetch\lib\index.js
+    - [1m[36mencoding[39m[22m
+[31merror during build:
+Error: EPERM: operation not permitted, symlink '![-]\catchall.func' -> 'C:\okemmanuel\kneesup-prod\kneesup-admin\.vercel\output\functions\index.func'
+    at Object.symlinkSync (node:fs:1868:11)
+    at adapt (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/@sveltejs/adapter-vercel/index.js:477:9)
+    at async adapt (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/@sveltejs/kit/src/core/adapt/index.js:41:2)
+    at async finalise (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/@sveltejs/kit/src/exports/vite/index.js:1359:7)
+    at async Object.handler (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/@sveltejs/kit/src/exports/vite/index.js:1390:5)
+    at async PluginDriver.hookParallel (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/rollup/dist/es/shared/node-entry.js:22475:17)
+    at async Object.close (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/rollup/dist/es/shared/node-entry.js:23494:13)
+    at async buildEnvironment (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/vite/dist/node/chunks/config.js:33555:15)
+    at async Object.build (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/vite/dist/node/chunks/config.js:33900:19)
+    at async Object.buildApp (file:///C:/okemmanuel/kneesup-prod/kneesup-admin/node_modules/vite/dist/node/chunks/config.js:33897:153)[39m

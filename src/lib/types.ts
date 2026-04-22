@@ -7,7 +7,7 @@ export interface AdminUser {
   email: string;
   displayName: string;
   photoURL?: string;
-  role: 'super_admin' | 'admin' | 'support';
+  role: 'super_admin' | 'admin' | 'support' | 'developer';
   createdAt: string;
 }
 
@@ -78,7 +78,7 @@ export interface AdminMember {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'support';
+  role: 'super_admin' | 'admin' | 'support' | 'developer';
   photoURL?: string;
   lastActive: string;
   status: 'active' | 'inactive';

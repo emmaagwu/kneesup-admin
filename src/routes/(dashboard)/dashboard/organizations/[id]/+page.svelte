@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import TopBar from '$components/layout/TopBar.svelte';
   import type { PageData } from './$types';
 
-  let { data }: { data: PageData } = $props();
+  type ActionResult = {
+    successMessage?: string;
+    errorMessage?: string;
+  };
+
+  let { data, form }: { data: PageData; form?: ActionResult } = $props();
 
   // ── Types ────────────────────────────────────────────────────────
   type OrgStatus = 'active' | 'inactive' | 'blocked';
@@ -13,11 +17,11 @@
   type Tab = 'venues' | 'reservations' | 'team' | 'activity';
 
   interface OrgVenue {
-    id: string; name: string; address: string; spaces: number; rating: number; status: VenueStatus;
+    id: string; name: string; address: string; spaces: number; rating: number; status: VenueStatus; createdAt: string;
   }
   interface OrgReservation {
     id: string; client: string; email: string; venue: string; space: string;
-    cost: string; dateTime: string; duration: string; status: ReservationStatus;
+    cost: string; dateTime: string; createdAt: string; duration: string; status: ReservationStatus;
   }
   interface OrgMember {
     id: string; name: string; email: string; role: string; dateJoined: string; status: MemberStatus;
@@ -32,10 +36,26 @@
     venues: OrgVenue[]; reservations: OrgReservation[]; team: OrgMember[]; activity: OrgActivity[];
   }
 
+  type ViewMode = 'recent' | 'oldest' | 'last30' | 'last90' | 'name_asc' | 'name_desc' | 'status_active' | 'status_inactive';
+
   // ── State ─────────────────────────────────────────────────────────
   let activeTab = $state<Tab>('venues');
   let showBlockModal = $state(false);
-  let activeMenu = $state<string | null>(null);
+  let showEditModal = $state(false);
+  let editName = $state('');
+  let editOwnerName = $state('');
+  let editOwnerEmail = $state('');
+  let editOwnerTitle = $state('Owner');
+  let editOwnerUserId = $state('');
+  let search = $state('');
+  let viewMode = $state<ViewMode>('recent');
+
+  const stats = [
+    { key: 'venues', label: 'VENUES', value: () => org.venueCount, icon: 'venues' as const },
+    { key: 'reservations', label: 'RESERVATIONS', value: () => org.reservationCount, icon: 'reservations' as const },
+    { key: 'revenue', label: 'TOTAL GROSS REVENUE', value: () => org.revenue, icon: 'revenue' as const },
+    { key: 'team', label: 'TEAM MEMBERS', value: () => org.teamCount, icon: 'team' as const }
+  ] as const;
 
   // Build the org object in the exact shape your markup expects
   let org = $derived<OrgDetail>({
@@ -71,21 +91,176 @@
     return colors[name.charCodeAt(0) % colors.length];
   }
 
-  const statusColors: Record<string, string> = {
-    active:   'text-[#16a34a]',
-    inactive: 'text-[#d97706]',
-    blocked:  'text-[#dc2626]',
-  };
-
   const statusBadgeClass: Record<string, string> = {
     active:   'text-[#16a34a] bg-[#f0fdf4]',
     inactive: 'text-[#d97706] bg-[#fffbeb]',
     blocked:  'text-[#dc2626] bg-[#fef2f2]',
   };
 
+  const TAB_DEFAULT_VIEW: Record<Tab, ViewMode> = {
+    venues: 'recent',
+    reservations: 'recent',
+    team: 'recent',
+    activity: 'recent'
+  };
+
+  function setTab(tab: Tab) {
+    activeTab = tab;
+    viewMode = TAB_DEFAULT_VIEW[tab];
+  }
+
+  function parseDate(value: string) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  function isWithinLastDays(value: string, days: number) {
+    const d = parseDate(value);
+    if (!d) return false;
+    return d.getTime() >= Date.now() - days * 24 * 60 * 60 * 1000;
+  }
+
+  function getRecencyValue(value: string) {
+    const d = parseDate(value);
+    return d ? d.getTime() : 0;
+  }
+
+  let viewOptions = $derived.by(() => {
+    if (activeTab === 'venues') {
+      return [
+        { value: 'recent', label: 'Most Recent' },
+        { value: 'oldest', label: 'Oldest First' },
+        { value: 'name_asc', label: 'Name A-Z' },
+        { value: 'name_desc', label: 'Name Z-A' },
+        { value: 'status_active', label: 'Status: Active' },
+        { value: 'status_inactive', label: 'Status: Inactive' }
+      ] as Array<{ value: ViewMode; label: string }>;
+    }
+
+    return [
+      { value: 'recent', label: 'Most Recent' },
+      { value: 'oldest', label: 'Oldest First' },
+      { value: 'last30', label: 'Last 30 Days' },
+      { value: 'last90', label: 'Last 90 Days' },
+      { value: 'name_asc', label: 'Name A-Z' },
+      { value: 'name_desc', label: 'Name Z-A' },
+      { value: 'status_active', label: 'Status: Active' },
+      { value: 'status_inactive', label: 'Status: Inactive' }
+    ] as Array<{ value: ViewMode; label: string }>;
+  });
+
+  let visibleVenues = $derived.by(() => {
+    let rows = [...org.venues];
+    const query = search.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((row) =>
+        row.name.toLowerCase().includes(query) ||
+        row.address.toLowerCase().includes(query)
+      );
+    }
+
+    if (viewMode === 'status_active') rows = rows.filter((row) => row.status === 'active');
+    if (viewMode === 'status_inactive') rows = rows.filter((row) => row.status === 'inactive');
+    if (viewMode === 'last30') rows = rows.filter((row) => isWithinLastDays(row.createdAt, 30));
+    if (viewMode === 'last90') rows = rows.filter((row) => isWithinLastDays(row.createdAt, 90));
+
+    if (viewMode === 'name_asc') rows.sort((a, b) => a.name.localeCompare(b.name));
+    else if (viewMode === 'name_desc') rows.sort((a, b) => b.name.localeCompare(a.name));
+    else if (viewMode === 'oldest') rows.sort((a, b) => getRecencyValue(a.createdAt) - getRecencyValue(b.createdAt));
+    else rows.sort((a, b) => getRecencyValue(b.createdAt) - getRecencyValue(a.createdAt));
+
+    return rows;
+  });
+
+  let visibleReservations = $derived.by(() => {
+    let rows = [...org.reservations];
+    const query = search.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((row) =>
+        row.client.toLowerCase().includes(query) ||
+        row.email.toLowerCase().includes(query) ||
+        row.venue.toLowerCase().includes(query) ||
+        row.space.toLowerCase().includes(query)
+      );
+    }
+
+    if (viewMode === 'status_active') rows = rows.filter((row) => row.status === 'active');
+    if (viewMode === 'status_inactive') rows = rows.filter((row) => row.status === 'inactive');
+    if (viewMode === 'last30') rows = rows.filter((row) => isWithinLastDays(row.createdAt, 30));
+    if (viewMode === 'last90') rows = rows.filter((row) => isWithinLastDays(row.createdAt, 90));
+
+    if (viewMode === 'name_asc') rows.sort((a, b) => a.client.localeCompare(b.client));
+    else if (viewMode === 'name_desc') rows.sort((a, b) => b.client.localeCompare(a.client));
+    else if (viewMode === 'oldest') rows.sort((a, b) => getRecencyValue(a.createdAt) - getRecencyValue(b.createdAt));
+    else rows.sort((a, b) => getRecencyValue(b.createdAt) - getRecencyValue(a.createdAt));
+
+    return rows;
+  });
+
+  let visibleTeam = $derived.by(() => {
+    let rows = [...org.team];
+    const query = search.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((row) =>
+        row.name.toLowerCase().includes(query) ||
+        row.email.toLowerCase().includes(query) ||
+        row.role.toLowerCase().includes(query)
+      );
+    }
+
+    if (viewMode === 'status_active') rows = rows.filter((row) => row.status === 'active');
+    if (viewMode === 'status_inactive') rows = rows.filter((row) => row.status === 'inactive');
+    if (viewMode === 'last30') rows = rows.filter((row) => isWithinLastDays(row.dateJoined, 30));
+    if (viewMode === 'last90') rows = rows.filter((row) => isWithinLastDays(row.dateJoined, 90));
+
+    if (viewMode === 'name_asc') rows.sort((a, b) => a.name.localeCompare(b.name));
+    else if (viewMode === 'name_desc') rows.sort((a, b) => b.name.localeCompare(a.name));
+    else if (viewMode === 'oldest') rows.sort((a, b) => getRecencyValue(a.dateJoined) - getRecencyValue(b.dateJoined));
+    else rows.sort((a, b) => getRecencyValue(b.dateJoined) - getRecencyValue(a.dateJoined));
+
+    return rows;
+  });
+
+  let visibleActivity = $derived.by(() => {
+    let rows = [...org.activity];
+    const query = search.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((row) =>
+        row.name.toLowerCase().includes(query) ||
+        row.email.toLowerCase().includes(query) ||
+        row.role.toLowerCase().includes(query)
+      );
+    }
+
+    if (viewMode === 'status_active') rows = rows.filter((row) => row.status === 'active');
+    if (viewMode === 'status_inactive') rows = rows.filter((row) => row.status === 'inactive');
+    if (viewMode === 'last30') rows = rows.filter((row) => isWithinLastDays(row.dateJoined, 30));
+    if (viewMode === 'last90') rows = rows.filter((row) => isWithinLastDays(row.dateJoined, 90));
+
+    if (viewMode === 'name_asc') rows.sort((a, b) => a.name.localeCompare(b.name));
+    else if (viewMode === 'name_desc') rows.sort((a, b) => b.name.localeCompare(a.name));
+    else if (viewMode === 'oldest') rows.sort((a, b) => getRecencyValue(a.dateJoined) - getRecencyValue(b.dateJoined));
+    else rows.sort((a, b) => getRecencyValue(b.dateJoined) - getRecencyValue(a.dateJoined));
+
+    return rows;
+  });
+
   function confirmBlock() {
     showBlockModal = false;
     // TODO: call API
+  }
+
+  function openEditModal() {
+    editName = data.organization.name;
+    editOwnerName = data.owner?.name ?? '';
+    editOwnerEmail = data.owner?.email ?? data.organization.email ?? '';
+    editOwnerTitle = data.owner?.role ?? 'Owner';
+    editOwnerUserId = data.owner?.userId ?? '';
+    showEditModal = true;
+  }
+
+  function closeEditModal() {
+    showEditModal = false;
   }
 
   const tabs: { key: Tab; label: string }[] = [
@@ -107,15 +282,75 @@
   <title>{org.name} — KneesUp Admin</title>
 </svelte:head>
 
+{#if form?.successMessage}
+  <div class="px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-sm text-[#166534]">
+      {form.successMessage}
+    </div>
+  </div>
+{/if}
+
+{#if form?.errorMessage}
+  <div class="px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]">
+      {form.errorMessage}
+    </div>
+  </div>
+{/if}
+
+{#if showEditModal}
+  <div class="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px] p-4 flex items-center justify-center" role="dialog" aria-modal="true" tabindex="-1" onclick={closeEditModal} onkeydown={(event) => (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') && closeEditModal()}>
+    <div class="w-full max-w-160 rounded-2xl bg-white shadow-xl border border-[#e5e7eb]" role="presentation" onclick={(event) => event.stopPropagation()}>
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#f3f4f6]">
+        <div>
+          <h3 class="text-lg font-bold text-[#111827]">Edit Organization</h3>
+          <p class="text-sm text-[#9ca3af]">Update the organization and owner details.</p>
+        </div>
+        <button aria-label="Close edit modal" onclick={closeEditModal} class="text-[#9ca3af] hover:text-[#374151] transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form method="POST" action="?/updateOrganization" class="px-5 py-5 space-y-4">
+        <input type="hidden" name="ownerUserId" value={editOwnerUserId} />
+
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="organization-name">Organization name</label>
+          <input id="organization-name" name="name" bind:value={editName} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-name">Owner name</label>
+            <input id="owner-name" name="ownerName" bind:value={editOwnerName} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-title">Owner title</label>
+            <input id="owner-title" name="ownerTitle" bind:value={editOwnerTitle} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-[#374151] mb-1.5" for="owner-email">Owner email</label>
+          <input id="owner-email" name="ownerEmail" type="email" bind:value={editOwnerEmail} class="w-full rounded-lg border border-[#e5e7eb] px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0d9488]" />
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick={closeEditModal} class="px-4 py-2 rounded-lg border border-[#e5e7eb] text-sm font-semibold text-[#374151] hover:bg-[#f9fafb] transition-colors">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-[#134e4a] text-white text-sm font-semibold hover:bg-[#0f3f3c] transition-colors">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
 <!-- Block confirm modal backdrop -->
 {#if showBlockModal}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
-       onclick={() => showBlockModal = false}>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-[300px] p-6 relative"
-         onclick={(e) => e.stopPropagation()}>
-      <button onclick={() => showBlockModal = false}
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px] p-4" role="dialog" aria-modal="true" tabindex="-1" onclick={() => showBlockModal = false} onkeydown={(event) => (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') && (showBlockModal = false)}>
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-75 p-6 relative" role="presentation" onclick={(e) => e.stopPropagation()}>
+      <button aria-label="Close block confirmation" onclick={() => showBlockModal = false}
               class="absolute top-4 right-4 text-[#9ca3af] hover:text-[#374151] transition-colors">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -160,7 +395,7 @@
   ]}
 />
 
-<div class="px-4 sm:px-6 lg:px-8 py-6 space-y-5 max-w-[1400px]">
+<div class="px-4 sm:px-6 lg:px-8 py-6 space-y-5 max-w-350">
 
   <!-- ── Header card ──────────────────────────────────────────── -->
   <div class="bg-white rounded-xl border border-[#e5e7eb] px-5 sm:px-6 py-5">
@@ -182,14 +417,14 @@
 
       <!-- Right: Edit + Block buttons -->
       <div class="flex items-center gap-2 shrink-0">
-        <button class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
+        <button type="button" aria-label="Edit organization" onclick={openEditModal} class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
                        border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
           </svg>
           <span class="hidden sm:inline">Edit</span>
         </button>
-        <button onclick={() => showBlockModal = true}
+        <button type="button" aria-label="Block organization" onclick={() => showBlockModal = true}
                 class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold
                        border border-[#fecaca] text-[#dc2626] hover:bg-[#fef2f2] transition-colors">
           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -222,23 +457,28 @@
 
   <!-- ── Summary stats ─────────────────────────────────────────── -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-    {#each [
-      { label: 'VENUES',             value: org.venueCount,      icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>` },
-      { label: 'RESERVATIONS',       value: org.reservationCount, icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>` },
-      { label: 'TOTAL GROSS REVENUE',value: org.revenue,          icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>` },
-      { label: 'TEAM MEMBERS',       value: org.teamCount,        icon: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>` },
-    ] as stat}
+    {#each stats as stat (stat.key)}
       <div class="bg-white rounded-xl border border-[#e5e7eb] p-4 sm:p-5">
         <div class="flex items-center justify-between mb-3">
           <span class="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase text-[#9ca3af] leading-tight">
             {stat.label}
           </span>
           <div class="w-7 h-7 rounded-lg bg-[#f3f4f6] flex items-center justify-center text-[#6b7280] shrink-0">
-            {@html stat.icon}
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              {#if stat.icon === 'venues'}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              {:else if stat.icon === 'reservations'}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              {:else if stat.icon === 'revenue'}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              {:else}
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              {/if}
+            </svg>
           </div>
         </div>
         <div class="text-2xl sm:text-[1.75rem] font-bold text-[#111827] leading-none">
-          {stat.value}
+          {stat.value()}
         </div>
       </div>
     {/each}
@@ -249,9 +489,9 @@
 
     <!-- Tab nav -->
     <div class="flex border-b border-[#f0f0f0] overflow-x-auto">
-      {#each tabs as tab}
+      {#each tabs as tab (tab.key)}
         <button
-          onclick={() => activeTab = tab.key}
+          onclick={() => setTab(tab.key)}
           class="px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2
                  {activeTab === tab.key
                    ? 'border-[#134e4a] text-[#134e4a]'
@@ -269,23 +509,22 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input type="search" placeholder="Search"
+               bind:value={search}
                class="pl-8 pr-4 py-1.5 text-xs rounded-lg border border-[#e5e7eb] w-48
                       focus:outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-transparent
                       placeholder:text-[#9ca3af]"/>
       </div>
       <div class="flex items-center gap-2 sm:ml-auto">
-        <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
-          <svg class="w-3 h-3 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
-          Last 30 days
-        </button>
-        <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb] transition-colors">
+        <label class="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#374151] bg-white">
           <svg class="w-3 h-3 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
           </svg>
-          Filter
-        </button>
+          <select bind:value={viewMode} class="bg-transparent pr-1 text-xs focus:outline-none">
+            {#each viewOptions as option (option.value)}
+              <option value={option.value}>{option.label}</option>
+            {/each}
+          </select>
+        </label>
       </div>
     </div>
 
@@ -304,10 +543,10 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f9fafb]">
-            {#each org.venues as venue}
+            {#each visibleVenues as venue (venue.id)}
               <tr class="hover:bg-[#fafafa] transition-colors">
                 <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{venue.name}</td>
-                <td class="px-4 py-4 text-sm text-[#6b7280] max-w-[260px]">{venue.address}</td>
+                <td class="px-4 py-4 text-sm text-[#6b7280] max-w-65">{venue.address}</td>
                 <td class="px-4 py-4 text-sm text-[#111827]">{venue.spaces}</td>
                 <td class="px-4 py-4 text-sm text-[#111827]">{venue.rating}</td>
                 <td class="px-4 py-4">
@@ -319,7 +558,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-4">
-                  <button class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
+                  <button type="button" aria-label={`Venue actions for ${venue.name}`} class="w-7 h-7 flex items-center justify-center rounded-md text-[#9ca3af] hover:bg-[#f3f4f6] hover:text-[#374151] transition-colors">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
                     </svg>
@@ -332,13 +571,13 @@
       </div>
       <!-- Pagination -->
       <div class="px-5 py-4 border-t border-[#f0f0f0] flex items-center justify-between">
-        <p class="text-xs text-[#6b7280]">Showing 1-{org.venues.length} of {org.venueCount}</p>
+        <p class="text-xs text-[#6b7280]">Showing 1-{visibleVenues.length} of {org.venueCount}</p>
         <div class="flex items-center gap-1">
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+          <button type="button" aria-label="Previous venues page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+          <button type="button" aria-label="Current venues page 1" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+          <button type="button" aria-label="Next venues page" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -362,7 +601,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f9fafb]">
-            {#each org.reservations as res}
+            {#each visibleReservations as res (res.id)}
               <tr class="hover:bg-[#fafafa] transition-colors">
                 <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{res.client}</td>
                 <td class="px-4 py-4 text-sm text-[#6b7280] whitespace-nowrap">{res.email}</td>
@@ -385,13 +624,13 @@
         </table>
       </div>
       <div class="px-5 py-4 border-t border-[#f0f0f0] flex items-center justify-between">
-        <p class="text-xs text-[#6b7280]">Showing 1-{org.reservations.length} of {org.reservationCount}</p>
+        <p class="text-xs text-[#6b7280]">Showing 1-{visibleReservations.length} of {org.reservationCount}</p>
         <div class="flex items-center gap-1">
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
+          <button type="button" aria-label="Previous reservations page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#374151] hover:bg-[#f9fafb]">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
+          <button type="button" aria-label="Current reservations page 1" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+          <button type="button" aria-label="Next reservations page" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white hover:bg-[#243647]">
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -412,7 +651,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f9fafb]">
-            {#each org.team as member}
+            {#each visibleTeam as member (member.id)}
               <tr class="hover:bg-[#fafafa] transition-colors">
                 <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{member.name}</td>
                 <td class="px-4 py-4 text-sm text-[#6b7280]">{member.email}</td>
@@ -432,13 +671,13 @@
         </table>
       </div>
       <div class="px-5 py-4 border-t border-[#f0f0f0] flex items-center justify-between">
-        <p class="text-xs text-[#6b7280]">Showing 1-{org.team.length} of {org.team.length}</p>
+        <p class="text-xs text-[#6b7280]">Showing 1-{visibleTeam.length} of {org.team.length}</p>
         <div class="flex items-center gap-1">
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+          <button type="button" aria-label="Previous team page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+          <button type="button" aria-label="Current team page 1" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+          <button type="button" aria-label="Next team page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -459,7 +698,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-[#f9fafb]">
-            {#each org.activity as item}
+            {#each visibleActivity as item (item.id)}
               <tr class="hover:bg-[#fafafa] transition-colors">
                 <td class="px-5 py-4 text-sm font-semibold text-[#111827] whitespace-nowrap">{item.name}</td>
                 <td class="px-4 py-4 text-sm text-[#6b7280]">{item.email}</td>
@@ -479,13 +718,13 @@
         </table>
       </div>
       <div class="px-5 py-4 border-t border-[#f0f0f0] flex items-center justify-between">
-        <p class="text-xs text-[#6b7280]">Showing 1-{org.activity.length} of {org.activity.length}</p>
+        <p class="text-xs text-[#6b7280]">Showing 1-{visibleActivity.length} of {org.activity.length}</p>
         <div class="flex items-center gap-1">
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+          <button type="button" aria-label="Previous activity page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
-          <button class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
+          <button type="button" aria-label="Current activity page 1" class="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1a2e3b] text-white text-xs font-semibold">1</button>
+          <button type="button" aria-label="Next activity page" class="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#9ca3af]" disabled>
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
